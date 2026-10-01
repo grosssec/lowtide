@@ -9,6 +9,8 @@ export interface LedgerEntry {
   /** When the money was spent or received (purchase date for card purchases). */
   date: ISODate;
   postedDate: ISODate;
+  /** ISO date-time in UTC when the moment is known (bank alert emails, cash typed in). */
+  at?: string;
   description: string;
   /** Negative = money out (or a card charge). */
   amount: Cents;

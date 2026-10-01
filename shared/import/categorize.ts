@@ -9,12 +9,15 @@ export interface CategoryRule {
   category: string;
   /** Defaults to income for money in and expense for money out. */
   kind?: EntryKind;
+  /** Only money coming in, or only money going out (e.g. a school is tuition when paid, payroll when it pays you). */
+  sign?: 'in' | 'out';
 }
 
 interface Compiled {
   pattern: RegExp;
   category: string;
   kind?: EntryKind;
+  sign?: 'in' | 'out';
 }
 
 /** First matching rule wins, so specific rules go before broad ones (and personal rules before defaults). */
@@ -23,9 +26,11 @@ export function makeCategorizer(rules: CategoryRule[]) {
     pattern: new RegExp(rule.match, 'i'),
     category: rule.category,
     kind: rule.kind,
+    sign: rule.sign,
   }));
   return (description: string, amount: Cents): { category: string; kind: EntryKind } => {
-    const rule = compiled.find((r) => r.pattern.test(description));
+    const direction = amount >= 0 ? 'in' : 'out';
+    const rule = compiled.find((r) => (!r.sign || r.sign === direction) && r.pattern.test(description));
     if (rule) return { category: rule.category, kind: rule.kind ?? (amount >= 0 ? 'income' : 'expense') };
     return amount >= 0 ? { category: 'Uncategorized income', kind: 'income' } : { category: 'Uncategorized', kind: 'expense' };
   };
@@ -57,7 +62,7 @@ export const DEFAULT_RULES: CategoryRule[] = [
   },
   { match: 'uber|ubr\\*|lyft|atrans|tokentransit|transit|parking|pkg', category: 'Transport' },
   { match: 'amazon|amzn|ross store|marshalls|nike|adidas|old navy|tj ?maxx|best buy|target|ebay|shein|temu|eros negocios', category: 'Shopping' },
-  { match: 'lakeside christian|lakeside college|flywire', category: 'Tuition' },
+  { match: 'lakeside christian|lakeside college|flywire', category: 'Tuition', sign: 'out' },
   // People
   { match: 'zelle payment to', category: 'Sent to people' },
   { match: 'zelle payment from', category: 'Received from people', kind: 'income' },

@@ -70,6 +70,12 @@ describe('categorizer', () => {
     expect(categorize('DIRECTPAY FULL BALANCE', 38_147).kind).toBe('transfer');
   });
 
+  it('applies a rule only in the direction it is meant for', () => {
+    const withPayroll = makeCategorizer([{ match: 'lakeside christian', sign: 'in', category: 'Bookstore', kind: 'income' }, ...DEFAULT_RULES]);
+    expect(withPayroll('LAKESIDE CHRISTIAN UN PAYROLL PPD ID: 0000000002', 74_000)).toEqual({ category: 'Bookstore', kind: 'income' });
+    expect(withPayroll('Card Purchase 09/01 Lakeside Christian Uni Austin LA', -414)).toEqual({ category: 'Tuition', kind: 'expense' });
+  });
+
   it('falls back by sign when nothing matches', () => {
     expect(categorize('Something New', -100)).toEqual({ category: 'Uncategorized', kind: 'expense' });
     expect(categorize('Something New', 100)).toEqual({ category: 'Uncategorized income', kind: 'income' });
