@@ -1,32 +1,41 @@
-# React + TypeScript + Vite
+# finance-dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Personal finance dashboard: what came in, what went out, the month's result, a forecast of hourly income, and how much is **safe to spend** without touching the reserve or next month.
 
-Currently, two official plugins are available:
+## Screens
+- **Month**: safe to spend, projected balance until the next month ends (paydays, tightest day, reserve), money in / out / result, next month covered or not, spending by category vs budget, income by source, next 14 days, alerts.
+- **Plan**: month-end balance until the plan end for a worst case and a likely case, spending room at checkpoints (e.g. trips), the savings goal under every scenario.
+- **Transactions**: import Chase statement PDFs and Chase / Discover CSV exports, add cash, recategorize (optionally as a rule for similar transactions).
+- **Settings**: balances, reserve and goal, budgets, bills, one-off events, rules, passkeys, full plan as JSON.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Status
+- ✅ Engine, importer, Worker API (D1), React app, passkey login, PWA icons. 60 tests.
+- ⏳ Deploy (needs a Cloudflare account, see DEPLOY.md), then alerts (daily balance + available, bills, reserve) and hours from Google Sheets.
 
-## React Compiler
+## Setup
+```bash
+npm install
+npm run db:migrate      # local D1 tables
+npm run seed            # local D1 ← data/ledger.json, data/plan.local.json, data/rules.local.json
+```
+`.dev.vars` (gitignored) holds local secrets; `DEV_AUTH_BYPASS=1` skips sign-in on localhost only.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## Run
+```bash
+npm run dev     # React app + Worker API on http://localhost:5173
+npm run plan    # the plan in the terminal
+npm run import  # bank files in data/imports → data/ledger.json
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Test and check
+```bash
+npm test           # Vitest
+npm run typecheck  # tsc -b
+npm run lint       # oxlint
+```
+
+## Stack
+React 19 + Vite 8 + Tailwind 4, Cloudflare Workers (Vite plugin, Wrangler 4), Hono, D1, Zod, SimpleWebAuthn, unpdf (browser only), Vitest, oxlint.
+
+## Privacy
+No real financial data in git. Statements, balances and plan inputs stay in `data/`; secrets stay in `.env` / `.dev.vars`. The app only reads data and never moves money.

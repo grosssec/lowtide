@@ -32,3 +32,4 @@ dist-ssr
 
 # Real financial data (statements, balances, plan inputs) - never commit
 data/
+.vitest/

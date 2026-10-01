@@ -1,0 +1,148 @@
+{
+  "balances": {
+    "checking": 50000,
+    "cash": 2000,
+    "cardOwed": 15000,
+    "asOf": "2026-09-30",
+    "cardDueDay": 20
+  },
+  "plan": {
+    "planEnd": "2027-03-31",
+    "reserve": {
+      "amount": 50000,
+      "from": "2026-11-30"
+    },
+    "goal": {
+      "label": "Savings goal",
+      "amount": 200000,
+      "by": "2027-03-31",
+      "averageMonths": {
+        "start": "2027-02-01",
+        "end": "2027-03-31"
+      }
+    },
+    "jobs": [
+      {
+        "id": "shop",
+        "name": "Shop",
+        "rates": [
+          {
+            "from": "2026-01-01",
+            "centsPerHour": 1500
+          }
+        ],
+        "periods": [
+          {
+            "startDay": 1,
+            "endDay": 15,
+            "payMonthOffset": 0,
+            "payDate": {
+              "kind": "dayOfMonth",
+              "day": 20,
+              "roll": "backward"
+            }
+          },
+          {
+            "startDay": 16,
+            "endDay": "end",
+            "payMonthOffset": 1,
+            "payDate": {
+              "kind": "nthBusinessDay",
+              "n": 3
+            }
+          }
+        ]
+      }
+    ],
+    "hours": {
+      "conservative": {
+        "shop": {
+          "segments": [
+            {
+              "from": "2026-01-01",
+              "weeklyHours": 18
+            }
+          ]
+        }
+      },
+      "expected": {
+        "shop": {
+          "segments": [
+            {
+              "from": "2026-01-01",
+              "weeklyHours": 22
+            }
+          ]
+        }
+      }
+    },
+    "jobOptions": {
+      "same": {
+        "jobId": "shop",
+        "label": "same hours in 2027",
+        "segments": []
+      },
+      "raise": {
+        "jobId": "shop",
+        "label": "raise in 2027",
+        "segments": [],
+        "rate": {
+          "from": "2027-01-01",
+          "centsPerHour": 1700
+        }
+      }
+    },
+    "mainScenarios": [
+      {
+        "label": "Worst case",
+        "level": "conservative",
+        "option": "same"
+      },
+      {
+        "label": "Likely",
+        "level": "expected",
+        "option": "raise"
+      }
+    ],
+    "bills": [
+      {
+        "label": "Rent",
+        "category": "Rent",
+        "amount": 70000,
+        "day": 1,
+        "paidWith": "checking"
+      },
+      {
+        "label": "Phone",
+        "category": "Phone",
+        "amount": 3000,
+        "day": 12,
+        "paidWith": "card"
+      }
+    ],
+    "essentials": [
+      {
+        "label": "Groceries",
+        "category": "Groceries",
+        "monthly": 35000,
+        "paidWith": "card"
+      }
+    ],
+    "events": [
+      {
+        "date": "2026-12-10",
+        "label": "Gifts",
+        "category": "Gifts",
+        "amount": 20000,
+        "paidWith": "card"
+      }
+    ],
+    "checkpoints": [
+      {
+        "label": "Holiday trip",
+        "date": "2026-12-18",
+        "horizonEnd": "2027-01-31"
+      }
+    ]
+  }
+}
