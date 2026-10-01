@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import type { Balances, PlanConfig } from '../../shared/plan/config.ts';
+import { useMemo, useState } from 'react';
+import type { Actuals, PlanConfig } from '../../shared/plan/config.ts';
 import { buildYearPlan } from '../../shared/plan/year.ts';
 import { MonthLines } from '../components/charts.tsx';
 import { Card, ErrorNote, Loading } from '../components/ui.tsx';
@@ -9,20 +9,26 @@ import { useApi } from '../lib/useApi.ts';
 const COLORS = ['var(--series-1)', 'var(--series-2)'];
 
 export function PlanPage() {
-  const { data: inputs, error } = useApi<{ plan: PlanConfig; balances: Balances }>('/plan');
+  const { data: inputs, error } = useApi<{ plan: PlanConfig; actuals: Actuals }>('/plan');
   // Computed here, not on the Worker: it needs more CPU than the free plan allows per request.
-  const data = useMemo(() => (inputs ? buildYearPlan(inputs.plan, inputs.balances) : undefined), [inputs]);
-  if (!data) return error ? <ErrorNote message={error} /> : <Loading />;
+  const data = useMemo(() => (inputs ? buildYearPlan(inputs.plan, inputs.actuals) : undefined), [inputs]);
+  const [view, setView] = useState<'total' | 'free'>('total');
+  if (!data || !inputs) return error ? <ErrorNote message={error} /> : <Loading />;
 
   const months = data.scenarios[0]?.months.map((m) => m.month) ?? [];
   const floor = months.map((m) => (`${m}-31` >= data.reserve.from ? data.reserve.amount : null));
   const goal = data.goal;
+  const reserve = money(data.reserve.amount);
+  const toggle = 'h-7 rounded-md px-2.5 text-xs font-medium transition';
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-lg font-semibold tracking-tight">Plan until {months.length ? monthLabel(months[months.length - 1]) : '—'}</h1>
-        <p className="mt-1 text-sm text-ink-2">From your balances on {shortDate(data.asOf)}, with the bills, budgets and events in Settings.</p>
+        <p className="mt-1 text-sm text-ink-2">
+          Starts from today&apos;s total of {money(inputs.actuals.net)} (bank + cash − card, the {reserve} reserve included) and the bills, budgets and
+          events in Settings.
+        </p>
       </div>
 
       <Card title="Balance at the end of each month">
@@ -40,7 +46,29 @@ export function PlanPage() {
         </ul>
       </Card>
 
-      <Card title="Month by month">
+      <Card
+        title="Month by month"
+        action={
+          <div className="flex rounded-lg border border-line p-0.5" role="group" aria-label="Show">
+            {(
+              [
+                ['total', 'Total'],
+                ['free', 'Above reserve'],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={view === key}
+                onClick={() => setView(key)}
+                className={`${toggle} ${view === key ? 'bg-surface-2 text-ink' : 'text-muted hover:text-ink'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        }
+      >
         <table className="num w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-muted">
@@ -59,10 +87,11 @@ export function PlanPage() {
                 {data.scenarios.map((s) => {
                   const row = s.months[i];
                   const belowReserve = floor[i] !== null && row.endBalance < (floor[i] ?? 0);
+                  const shown = view === 'free' ? row.endBalance - (floor[i] ?? 0) : row.endBalance;
                   return (
                     <td key={s.label} className="py-2 text-right">
                       <div className="text-ink">
-                        {money(row.endBalance)}
+                        {money(shown)}
                         {belowReserve && <span className="sr-only"> (below the reserve)</span>}
                         {belowReserve && (
                           <span aria-hidden="true" className="ml-1 text-warning">
@@ -78,7 +107,12 @@ export function PlanPage() {
             ))}
           </tbody>
         </table>
-        <p className="mt-2 text-xs text-muted">Balance at the end of each month (bank + cash − card). ▲ below the {money(data.reserve.amount)} reserve.</p>
+        <p className="mt-2 text-xs text-muted">
+          {view === 'total'
+            ? `Total at the end of each month (bank + cash − card), the ${reserve} reserve included.`
+            : `What is left at the end of each month after setting the ${reserve} reserve aside (from ${shortDate(data.reserve.from)}).`}{' '}
+          ▲ below the reserve.
+        </p>
       </Card>
 
       {data.checkpoints.length > 0 && (
@@ -101,6 +135,7 @@ export function PlanPage() {
       )}
 
       <Card title={`${goal.label} · goal ${money(goal.amount)} by ${shortDate(goal.by)}`}>
+        <p className="-mt-1 mb-3 text-xs text-muted">Money above the {reserve} reserve on {shortDate(goal.by)}, for each work option.</p>
         <ul className="space-y-4">
           {goal.options.map((option) => (
             <li key={option.key}>
@@ -127,6 +162,16 @@ export function PlanPage() {
           ))}
         </ul>
       </Card>
+
+      {data.assumptions.length > 0 && (
+        <Card title="Assumptions to check">
+          <ul className="list-disc space-y-1 pl-5 text-sm text-ink-2">
+            {data.assumptions.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {data.notIncluded.length > 0 && (
         <Card title="Not in these numbers yet">

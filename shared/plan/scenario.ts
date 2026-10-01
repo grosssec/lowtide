@@ -1,22 +1,28 @@
 import type { DateRange, ISODate } from '../engine/dates.ts';
 import { billFlows, essentialFlows, eventFlows, paycheckFlows, type Flow } from '../engine/flows.ts';
 import { paychecksBetween, type HoursPlan, type Job, type Paycheck } from '../engine/schedule.ts';
-import type { PlanConfig, Scenario } from './config.ts';
+import type { LoggedHours, PlanConfig, Scenario } from './config.ts';
 
-/** Paychecks plus every planned outflow for one scenario, dated inside `range`. */
+/** Paychecks plus every planned outflow for one scenario, dated inside `range`. Logged hours replace planned ones. */
 export function scenarioFlows(
   config: PlanConfig,
   scenario: Scenario,
   range: DateRange,
   holidays: ReadonlySet<ISODate>,
+  logged?: LoggedHours,
 ): { paychecks: Paycheck[]; flows: Flow[] } {
-  const option = config.jobOptions[scenario.option];
+  const changes = config.jobOptions[scenario.option]?.changes ?? [];
   const paychecks = config.jobs.flatMap((job) => {
     const base = config.hours[scenario.level][job.id];
     if (!base) return [];
-    const applies = option?.jobId === job.id;
-    const plan: HoursPlan = applies ? { ...base, segments: [...base.segments, ...option.segments] } : base;
-    const effectiveJob: Job = applies && option.rate ? { ...job, rates: [...job.rates, option.rate] } : job;
+    const jobChanges = changes.filter((change) => change.jobId === job.id);
+    const plan: HoursPlan = {
+      ...base,
+      segments: [...base.segments, ...jobChanges.flatMap((change) => change.segments)],
+      ...(logged?.[job.id] ? { actuals: logged[job.id].actuals, actualsThrough: logged[job.id].through } : {}),
+    };
+    const rates = jobChanges.flatMap((change) => (change.rate ? [change.rate] : []));
+    const effectiveJob: Job = rates.length ? { ...job, rates: [...job.rates, ...rates] } : job;
     return paychecksBetween(effectiveJob, plan, range.start, range.end, holidays);
   });
   const flows = [

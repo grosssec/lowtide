@@ -7,14 +7,16 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { formatUSD, monthKey, type Cents, type ISODate } from '../shared/engine/index.ts';
 import type { LedgerEntry } from '../shared/import/index.ts';
-import { buildDashboard, buildYearPlan, type Balances, type PlanConfig } from '../shared/plan/index.ts';
+import { buildDashboard, buildYearPlan, computeActuals, type Balances, type PlanConfig } from '../shared/plan/index.ts';
 
 const path = process.argv[2] ?? new URL('../data/plan.local.json', import.meta.url).pathname;
 const { balances, plan } = JSON.parse(readFileSync(path, 'utf8')) as { balances: Balances; plan: PlanConfig };
 const ledgerPath = new URL('../data/ledger.json', import.meta.url).pathname;
 const ledger: LedgerEntry[] = !process.argv[2] && existsSync(ledgerPath) ? JSON.parse(readFileSync(ledgerPath, 'utf8')) : [];
-const now = new Date().toISOString().slice(0, 10);
-const today: ISODate = now > balances.asOf ? now : balances.asOf;
+const latestSnapshot = [balances.checking.asOf, balances.cash.asOf, balances.cardOwed.asOf].sort().at(-1)!;
+const now = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago' }).format(new Date());
+const today: ISODate = now > latestSnapshot ? now : latestSnapshot;
+const actuals = computeActuals(balances, ledger, today);
 
 const usd = (cents: Cents) => formatUSD(Math.round(cents / 100) * 100).slice(0, -3);
 function table(headers: string[], rows: string[][]): string {
@@ -24,11 +26,11 @@ function table(headers: string[], rows: string[][]): string {
 }
 const section = (title: string) => console.log(`\n## ${title}\n`);
 
-const dashboard = buildDashboard({ today, month: monthKey(today), config: plan, balances, ledger });
-const year = buildYearPlan(plan, balances);
+const dashboard = buildDashboard({ month: monthKey(today), config: plan, actuals, ledger });
+const year = buildYearPlan(plan, actuals);
 
-console.log(`# Plan as of ${balances.asOf} (today ${today})`);
-console.log(`Checking ${usd(balances.checking)} + cash ${usd(balances.cash)} − card ${usd(balances.cardOwed)} = net ${usd(dashboard.balances.net)}`);
+console.log(`# Plan for ${today} (balances typed in on ${latestSnapshot}, plus ${ledger.length ? 'the ledger after that' : 'no ledger'})`);
+console.log(`Checking ${usd(actuals.checking)} + cash ${usd(actuals.cash)} − card ${usd(actuals.cardOwed)} = total ${usd(actuals.net)} (reserve included)`);
 if (dashboard.safeToSpend && dashboard.nextMonth) {
   const s = dashboard.safeToSpend;
   section(`Today — ${dashboard.scenarioLabel}`);

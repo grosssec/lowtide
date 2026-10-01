@@ -25,6 +25,10 @@
 		"APP_NAME": "Finance",
 		"TIMEZONE": "America/Chicago"
 	},
+	// Hourly: the Worker sends the daily push at 8 am local time (an hourly check follows daylight saving changes).
+	"triggers": {
+		"crons": ["0 * * * *"]
+	},
 	"observability": {
 		"enabled": true
 	},

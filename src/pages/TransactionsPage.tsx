@@ -221,6 +221,11 @@ export function TransactionsPage() {
                       </div>
                       <div className="mt-1 flex items-center gap-2">
                         <span className="rounded border border-line px-1.5 text-[11px] text-muted">{ACCOUNT[entry.account] ?? entry.account}</span>
+                        {entry.source === 'alert' && (
+                          <span className="rounded border border-line px-1.5 text-[11px] text-muted" title="From a bank alert email; the statement or CSV replaces it">
+                            alert
+                          </span>
+                        )}
                         <select
                           value={entry.category}
                           onChange={(e) => changeCategory(entry, e.target.value)}
@@ -237,7 +242,7 @@ export function TransactionsPage() {
                     <div className={`num shrink-0 text-sm ${entry.kind === 'transfer' ? 'text-muted' : entry.amount > 0 ? 'text-good-ink' : 'text-ink'}`}>
                       {moneyExact(entry.amount, { sign: true })}
                     </div>
-                    {entry.source === 'manual' && (
+                    {(entry.source === 'manual' || entry.source === 'alert') && (
                       <button type="button" onClick={() => remove(entry)} className="text-muted hover:text-critical-ink" aria-label="Delete entry">
                         ×
                       </button>

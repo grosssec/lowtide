@@ -22,7 +22,10 @@ const lines = [
       `INSERT OR IGNORE INTO transactions (id, account, date, posted_date, description, amount, category, kind, source) VALUES (${text(e.id)}, ${text(e.account)}, ${text(e.date)}, ${text(e.postedDate)}, ${text(e.description)}, ${Math.round(e.amount)}, ${text(e.category)}, ${text(e.kind)}, ${text(e.source)});`,
   ),
   'DELETE FROM rules;',
-  ...rules.map((r, i) => `INSERT INTO rules (match, category, kind, position) VALUES (${text(r.match)}, ${text(r.category)}, ${text(r.kind ?? null)}, ${i});`),
+  ...rules.map(
+    (r, i) =>
+      `INSERT INTO rules (match, category, kind, sign, position) VALUES (${text(r.match)}, ${text(r.category)}, ${text(r.kind ?? null)}, ${text(r.sign ?? null)}, ${i});`,
+  ),
   ...(plan ? [`INSERT OR REPLACE INTO settings (key, value) VALUES ('plan', ${text(JSON.stringify(plan))});`] : []),
   ...(balances ? [`INSERT OR REPLACE INTO settings (key, value) VALUES ('balances', ${text(JSON.stringify(balances))});`] : []),
 ];

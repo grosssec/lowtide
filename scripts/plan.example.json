@@ -1,9 +1,17 @@
 {
   "balances": {
-    "checking": 50000,
-    "cash": 2000,
-    "cardOwed": 15000,
-    "asOf": "2026-09-30",
+    "checking": {
+      "amount": 50000,
+      "asOf": "2026-09-30"
+    },
+    "cash": {
+      "amount": 2000,
+      "asOf": "2026-09-30"
+    },
+    "cardOwed": {
+      "amount": 15000,
+      "asOf": "2026-09-30"
+    },
     "cardDueDay": 20
   },
   "plan": {
@@ -78,18 +86,26 @@
     },
     "jobOptions": {
       "same": {
-        "jobId": "shop",
         "label": "same hours in 2027",
-        "segments": []
+        "changes": [
+          {
+            "jobId": "shop",
+            "segments": []
+          }
+        ]
       },
       "raise": {
-        "jobId": "shop",
         "label": "raise in 2027",
-        "segments": [],
-        "rate": {
-          "from": "2027-01-01",
-          "centsPerHour": 1700
-        }
+        "changes": [
+          {
+            "jobId": "shop",
+            "segments": [],
+            "rate": {
+              "from": "2027-01-01",
+              "centsPerHour": 1700
+            }
+          }
+        ]
       }
     },
     "mainScenarios": [

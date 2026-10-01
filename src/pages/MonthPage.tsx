@@ -33,6 +33,8 @@ export function MonthPage({ onGo }: { onGo: (tab: Tab) => void }) {
   const freshness = Object.entries(data.dataUntil)
     .map(([account, date]) => `${ACCOUNT_NAMES[account] ?? account} until ${shortDate(date)}`)
     .join(' · ');
+  const checkedOn = Object.values(data.checkedOn).sort().at(-1);
+  const reserveActive = data.today >= data.reserve.from;
 
   return (
     <div className={`space-y-4 transition-opacity ${loading ? 'opacity-60' : ''}`}>
@@ -71,6 +73,22 @@ export function MonthPage({ onGo }: { onGo: (tab: Tab) => void }) {
               </div>
             )}
           </dl>
+        </Card>
+      )}
+
+      {data.isCurrentMonth && (
+        <Card title="Balances today">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat label="Bank" value={money(data.balances.checking)} />
+            <Stat label="Cash" value={money(data.balances.cash)} />
+            <Stat label="Card owes" value={money(-data.balances.cardOwed)} />
+            <Stat label="Total" value={money(data.balances.net)} note="reserve included" tone={data.balances.net < 0 ? 'bad' : undefined} />
+          </div>
+          <p className="mt-3 border-t border-line pt-3 text-xs text-muted">
+            {reserveActive
+              ? `${money(data.reserve.amount)} of the total is the reserve. Safe to spend never counts it.`
+              : `From ${shortDate(data.reserve.from)} on, ${money(data.reserve.amount)} of the total is the reserve. Safe to spend already keeps it from that day.`}
+          </p>
         </Card>
       )}
 
@@ -155,7 +173,8 @@ export function MonthPage({ onGo }: { onGo: (tab: Tab) => void }) {
 
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted">
         <span>
-          {freshness || 'No transactions imported yet'} · balances as of {shortDate(data.balances.asOf)}
+          {freshness || 'No transactions yet'}
+          {checkedOn ? ` · balances checked ${shortDate(checkedOn)}` : ''}
         </span>
         <span className="flex gap-2">
           <Button variant="quiet" className="h-8 px-3 text-xs" onClick={() => onGo('transactions')}>

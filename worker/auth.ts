@@ -35,8 +35,8 @@ async function sha256(value: string): Promise<string> {
   return isoBase64URL.fromBuffer(new Uint8Array(digest));
 }
 
-/** Constant-time comparison for the one-time setup token. */
-function sameSecret(a: string, b: string): boolean {
+/** Constant-time comparison for secrets (setup token, ingest token). */
+export function sameSecret(a: string, b: string): boolean {
   const x = new TextEncoder().encode(a);
   const y = new TextEncoder().encode(b);
   let diff = x.length ^ y.length;
