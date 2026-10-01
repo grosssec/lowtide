@@ -1,7 +1,16 @@
 {
   "extends": "./tsconfig.node.json",
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tools.tsbuildinfo"
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tools.tsbuildinfo",
+    "lib": [
+      "ES2023",
+      "DOM"
+    ]
   },
-  "include": ["shared", "test", "scripts", "vitest.config.ts"]
+  "include": [
+    "shared",
+    "test",
+    "scripts",
+    "vitest.config.ts"
+  ]
 }
