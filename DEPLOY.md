@@ -18,47 +18,72 @@ Nothing here runs without Ricardo's OK: it puts the app and his financial histor
    npx wrangler d1 migrations apply finance --remote
    npm run seed -- --remote
    ```
-5. Setup code for the first passkey. Generate it into `.env` (gitignored, never in chat), then store it as a Worker secret:
+5. Secrets: the setup code for the first passkey, the sync token for the Apps Script, and the push keys. This writes them into `.env` (gitignored, never in chat) and stores them as Worker secrets:
    ```bash
-   echo "SETUP_TOKEN=$(openssl rand -base64 24)" >> .env
-   grep SETUP_TOKEN .env | cut -d= -f2- | npx wrangler secret put SETUP_TOKEN
+   node scripts/secrets.ts --remote
    ```
 6. Deploy:
    ```bash
    npm run deploy
    ```
-   The app is served at `https://finance-dashboard.<account-subdomain>.workers.dev`.
+   The app is served at `https://finance-dashboard.<account-subdomain>.workers.dev`. The hourly Cron Trigger (daily push at 8 am Chicago time) is part of the deploy.
 
 ## Check before using it
 
 ```bash
 curl -s https://<app-url>/api/auth/status   # {"signedIn":false,"hasPasskey":false,"bypass":false}
 curl -s https://<app-url>/api/dashboard     # {"error":"Not signed in"}
+curl -s https://<app-url>/api/ingest/digest # {"error":"Not allowed"}
 ```
 `bypass` must be `false`: the dev bypass only exists in `.dev.vars` and only works on localhost.
 
 ## First sign-in
 
-1. On the Mac (Safari): open the URL, type the setup code from `.env`, confirm with Touch ID. The passkey syncs to the iPhone through iCloud Keychain.
-2. On the iPhone (Safari): open the URL, sign in with Face ID, then Share → Add to Home Screen.
-3. Optional hygiene once a passkey exists: `npx wrangler secret delete SETUP_TOKEN` (new passkeys can then only be added while signed in, from Settings).
+1. On the Mac (Safari):
+   1. Open the URL.
+   2. Type the setup code (`SETUP_TOKEN` in `.env`).
+   3. Confirm with Touch ID. The passkey syncs to the iPhone through iCloud Keychain.
+2. On the iPhone (Safari):
+   1. Open the URL and sign in with Face ID.
+   2. Share → **Add to Home Screen**.
+   3. Open **Finance** from the Home Screen → Settings → Daily notification → **Turn on for this device**. iOS only allows web notifications for apps added to the Home Screen.
+3. Optional hygiene once a passkey exists: `npx wrangler secret delete SETUP_TOKEN`. After that, new passkeys can only be added while signed in, from Settings.
+
+## Automatic sync
+
+Follow `apps-script/README.md`:
+- bank alerts by email
+- the script in Google with `APP_URL` and `INGEST_TOKEN`
+- timesheets
 
 ## Updates
 
 ```bash
 npm test && npm run typecheck && npm run lint
-npm run deploy
 npx wrangler d1 migrations apply finance --remote   # only when migrations/ changed
+npm run deploy
 ```
 
 ## Why some work runs in the browser
 
-The Workers free plan allows about 10 ms of CPU per request. The Month screen (≈1 ms) is computed on the Worker; the year plan (≈15 ms) and statement parsing (PDF ≈50–150 ms) run in the browser, and the Worker only stores the rows it receives.
+The Workers free plan allows about 10 ms of CPU per request.
+- On the Worker: the Month screen and the daily push (≈1 ms each).
+- In the browser: the year plan (≈15 ms) and statement parsing (PDF ≈50–150 ms). The Worker only stores the rows it receives.
 
 ## Security notes
 
-- Data endpoints require a session cookie (HttpOnly, Secure, SameSite=Strict, 30 days); session tokens are stored hashed.
-- State-changing calls also require the `X-Requested-With: finance-dashboard` header (CSRF guard).
-- Static assets ship with a strict CSP and no-framing headers (`public/_headers`); API responses are `no-store`.
-- No bank passwords anywhere; data only comes in through files you import or numbers you type.
-- Detection: Workers observability is on (`wrangler.jsonc`). Repeated 401/403 on `/api/auth/*` in the logs means someone is trying the login.
+- **Sessions**:
+  - Data endpoints require a session cookie (HttpOnly, Secure, SameSite=Strict, 30 days). Session tokens are stored hashed.
+  - State-changing calls also need the `X-Requested-With: finance-dashboard` header (CSRF guard).
+- **Sync**:
+  - `/api/ingest/*` takes no session; it needs `Authorization: Bearer <INGEST_TOKEN>` (compared in constant time).
+  - The token can only send alerts and hours and read the morning digest.
+  - Emails that fail Gmail's DMARC check, or come from look-alike domains, never touch the numbers.
+- **Push**:
+  - Subscriptions are accepted only for the browser push services (Apple, Google, Mozilla, Microsoft).
+  - The payload is encrypted for each device (RFC 8291).
+- **Static assets** ship with a strict CSP and no-framing headers (`public/_headers`). API responses are `no-store`.
+- **No bank passwords anywhere.** Data comes only from alert emails, files you import and numbers you type.
+- **Detection**: Workers observability is on (`wrangler.jsonc`).
+  - Repeated 401/403 on `/api/auth/*` means someone is trying the login.
+  - Repeated 401 on `/api/ingest/*` means someone is guessing the sync token: rotate it (apps-script/README.md).
