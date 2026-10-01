@@ -62,7 +62,8 @@ export const DEFAULT_RULES: CategoryRule[] = [
   },
   { match: 'uber|ubr\\*|lyft|atrans|tokentransit|transit|parking|pkg', category: 'Transport' },
   { match: 'amazon|amzn|ross store|marshalls|nike|adidas|old navy|tj ?maxx|best buy|target|ebay|shein|temu|eros negocios', category: 'Shopping' },
-  { match: 'lakeside christian|lakeside college|flywire', category: 'Tuition', sign: 'out' },
+  // ACH names are cut at 16 characters ("LAKESIDE CHRIST"), so match the start of the name.
+  { match: 'lakeside chri|lakeside col|flywire', category: 'Tuition', sign: 'out' },
   // People
   { match: 'zelle payment to', category: 'Sent to people' },
   { match: 'zelle payment from', category: 'Received from people', kind: 'income' },

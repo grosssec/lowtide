@@ -71,8 +71,11 @@ describe('categorizer', () => {
   });
 
   it('applies a rule only in the direction it is meant for', () => {
-    const withPayroll = makeCategorizer([{ match: 'lakeside christian', sign: 'in', category: 'Bookstore', kind: 'income' }, ...DEFAULT_RULES]);
+    const withPayroll = makeCategorizer([{ match: 'lakeside chri|lakeside col', sign: 'in', category: 'Bookstore', kind: 'income' }, ...DEFAULT_RULES]);
     expect(withPayroll('LAKESIDE CHRISTIAN UN PAYROLL PPD ID: 0000000002', 74_000)).toEqual({ category: 'Bookstore', kind: 'income' });
+    // Direct deposits carry the payer's name cut at 16 characters.
+    expect(withPayroll('LAKESIDE CHRIST PAYROLL PPD ID: 0000000002', 74_000)).toEqual({ category: 'Bookstore', kind: 'income' });
+    expect(withPayroll('LAKESIDE COLLEG BUSINESS OFFICE', -60_000)).toEqual({ category: 'Tuition', kind: 'expense' });
     expect(withPayroll('Card Purchase 09/01 Lakeside Christian Uni Austin LA', -414)).toEqual({ category: 'Tuition', kind: 'expense' });
   });
 
