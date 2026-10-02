@@ -202,7 +202,7 @@ export function SyncCard({ sync, jobs }: { sync: SettingsData['sync']; jobs: Pla
         <summary className="cursor-pointer text-ink">How it works</summary>
         <ol className="mt-2 list-decimal space-y-1 pl-5">
           <li>Chase and Discover email an alert for every purchase, deposit and payment, plus a daily balance.</li>
-          <li>A Google Apps Script in your email account reads those emails and the timesheets every 15 minutes and sends them here.</li>
+          <li>A Google Apps Script in your email account reads those emails and the timesheets twice a day (around 7 am and 7 pm) and sends them here.</li>
           <li>Bank statements and CSVs you import later replace the alert entries (the bank’s rows are the record).</li>
         </ol>
         <p className="mt-2 text-xs text-muted">Setup steps: apps-script/README.md in the project.</p>

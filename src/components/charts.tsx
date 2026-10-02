@@ -45,8 +45,21 @@ export interface RunwayPoint {
   floor: number;
 }
 
-/** Projected balance day by day, the reserve floor, paydays and the tightest day. */
-export function Runway({ points, paydays, low }: { points: RunwayPoint[]; paydays: string[]; low?: { date: string; balance: number } }) {
+/**
+ * Projected balance day by day, paydays and the tightest day. The reserve is always drawn at its level:
+ * faint before the date it starts counting, solid from then on.
+ */
+export function Runway({
+  points,
+  paydays,
+  low,
+  reserve,
+}: {
+  points: RunwayPoint[];
+  paydays: string[];
+  low?: { date: string; balance: number };
+  reserve?: { amount: number; from: string };
+}) {
   const { ref, width } = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
   if (points.length < 2) return null;
@@ -56,22 +69,21 @@ export function Runway({ points, paydays, low }: { points: RunwayPoint[]; payday
   const gutter = 46;
   const plotW = Math.max(1, width - gutter - 8);
   const plotH = height - axis - 12;
-  const values = points.flatMap((p) => [p.balance, p.floor]);
+  const values = [...points.flatMap((p) => [p.balance, p.floor]), reserve?.amount ?? 0];
   const ticks = niceTicks(Math.min(0, ...values), Math.max(...values));
   const yMin = ticks[0];
   const yMax = ticks[ticks.length - 1];
   const x = (i: number) => gutter + (i / (points.length - 1)) * plotW;
   const y = (v: number) => 12 + (1 - (v - yMin) / Math.max(1, yMax - yMin)) * plotH;
   const line = points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.balance).toFixed(1)}`).join('');
-  const floorSegments = points
-    .map((p, i) => ({ i, p }))
-    .filter(({ p }) => p.floor > 0)
-    .map(({ i, p }, k) => `${k ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.floor).toFixed(1)}`)
-    .join('');
+  // Where the reserve starts counting, as a position on the chart (before the first day → 0, after the last → the end).
+  const reserveStart = reserve ? points.findIndex((p) => p.date >= reserve.from) : -1;
+  const startX = reserveStart < 0 ? gutter + plotW : x(reserveStart);
+  const reserveY = reserve ? y(reserve.amount) : 0;
   const lowIndex = low ? points.findIndex((p) => p.date === low.date) : -1;
   const labelDates = points.map((p, i) => ({ p, i })).filter(({ p }) => p.date.endsWith('-01') || p.date.endsWith('-15'));
   const hovered = hover === null ? null : points[hover];
-  const floorValue = points.find((p) => p.floor > 0)?.floor;
+  const reserveLater = reserve ? reserve.from > points[0].date : false;
 
   function onPointer(event: React.PointerEvent<SVGSVGElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -104,7 +116,16 @@ export function Runway({ points, paydays, low }: { points: RunwayPoint[]; payday
               {shortDate(p.date)}
             </text>
           ))}
-          {floorSegments && <path d={floorSegments} fill="none" stroke="var(--ink-2)" strokeWidth={1.5} strokeDasharray="4 4" />}
+          {reserve && reserve.amount > 0 && (
+            <g>
+              {startX > gutter && (
+                <line x1={gutter} x2={startX} y1={reserveY} y2={reserveY} stroke="var(--ink-2)" strokeWidth={1.5} strokeDasharray="4 4" opacity={0.35} />
+              )}
+              {startX < gutter + plotW && (
+                <line x1={startX} x2={gutter + plotW} y1={reserveY} y2={reserveY} stroke="var(--ink-2)" strokeWidth={1.5} strokeDasharray="4 4" />
+              )}
+            </g>
+          )}
           <path d={line} fill="none" stroke="var(--series-1)" strokeWidth={2} strokeLinejoin="round" />
           {paydays.map((date) => {
             const i = points.findIndex((p) => p.date === date);
@@ -126,16 +147,17 @@ export function Runway({ points, paydays, low }: { points: RunwayPoint[]; payday
         <Tooltip x={x(hover)} width={width}>
           <div className="text-muted">{shortDate(hovered.date)}</div>
           <div className="num font-medium text-ink">{money(hovered.balance)}</div>
-          {hovered.floor > 0 && <div className="text-muted">reserve {money(hovered.floor)}</div>}
+          {reserve && hovered.date >= reserve.from && <div className="text-muted">reserve {money(reserve.amount)}</div>}
         </Tooltip>
       )}
       <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
         <span className="inline-flex items-center gap-1.5">
           <span className="h-0.5 w-4 rounded bg-series-1" /> Balance (bank + cash − card)
         </span>
-        {floorValue && (
+        {reserve && reserve.amount > 0 && (
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-4 border-t-[1.5px] border-dashed border-ink-2" /> Reserve {money(floorValue)}
+            <span className="w-4 border-t-[1.5px] border-dashed border-ink-2" /> Reserve {money(reserve.amount)}
+            {reserveLater ? ` from ${shortDate(reserve.from)}` : ''}
           </span>
         )}
         <span className="inline-flex items-center gap-1.5">

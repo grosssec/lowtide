@@ -11,6 +11,8 @@
  */
 
 const CONFIG = {
+  /** Local hours (project time zone) when the sync runs, once inside each hour. 7 am lands before the 8 am notification. */
+  syncHours: [7, 19],
   /** Gmail search for bank alerts. Spam and trash are never searched. */
   alertQuery: '(from:chase.com OR from:discover.com)',
   /** First run looks this far back; later runs only look at the last few days. */
@@ -39,14 +41,14 @@ const CONFIG = {
 
 const PROPS = PropertiesService.getScriptProperties();
 
-/** Run once after pasting the code and filling in the script properties. Creates the timers and syncs right away. */
+/** Run once after pasting the code and filling in the script properties. Creates the daily timers and syncs right away. */
 function setup() {
   settings_();
   ScriptApp.getProjectTriggers().forEach((trigger) => ScriptApp.deleteTrigger(trigger));
-  ScriptApp.newTrigger('syncAll').timeBased().everyMinutes(15).create();
-  ScriptApp.newTrigger('emailDigest').timeBased().everyHours(1).create();
+  CONFIG.syncHours.forEach((hour) => ScriptApp.newTrigger('syncAll').timeBased().atHour(hour).everyDays(1).create());
+  ScriptApp.newTrigger('emailDigest').timeBased().atHour(CONFIG.digestHour).everyDays(1).create();
   syncAll();
-  console.log('Set up: sync every 15 minutes, digest check every hour.');
+  console.log(`Set up: sync every day around ${CONFIG.syncHours.map((h) => `${h}:00`).join(' and ')}, digest around ${CONFIG.digestHour}:00.`);
 }
 
 /** Timer entry point. Errors are thrown at the end, so Google emails a failure report. */
@@ -296,12 +298,9 @@ function span_(startText, endText) {
 
 // ---------- Email digest ----------
 
-/** Hourly timer; acts once a day at CONFIG.digestHour. */
+/** Daily timer around CONFIG.digestHour; never sends twice the same day. */
 function emailDigest() {
-  const timeZone = Session.getScriptTimeZone();
-  const now = new Date();
-  if (Number(Utilities.formatDate(now, timeZone, 'H')) !== CONFIG.digestHour) return;
-  const today = Utilities.formatDate(now, timeZone, 'yyyy-MM-dd');
+  const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
   if (PROPS.getProperty('digestSentOn') === today) return;
   PROPS.setProperty('digestSentOn', today);
 

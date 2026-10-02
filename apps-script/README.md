@@ -1,6 +1,6 @@
 # Finance sync (Google Apps Script)
 
-Runs inside Google, on your work email account (Google Workspace), every 15 minutes:
+Runs inside Google, on your work email account (Google Workspace), twice a day (around 7 am and 7 pm; change `CONFIG.syncHours` for other times):
 
 - **Bank alerts**: reads Chase and Discover alert emails (read-only Gmail access) and sends them to the app. Each one becomes a transaction or a balance update.
 - **Hours**: reads the UMM and Bookstore timesheets (read-only) and sends the hours, so the paycheck forecast uses real hours instead of the plan.
@@ -57,7 +57,7 @@ Select **previewHours** and press **Run**. The log shows the days and hours read
 1. Select **previewAlerts** → **Run**. Google asks for permission; allow it.
    - If it says the app isn't verified: **Advanced** → **Go to Finance sync**. It's your own script.
 2. The log lists recent alert emails. `verified: true` means Gmail confirmed the sender (DMARC).
-3. Select **setup** → **Run**. This creates the timers and syncs once.
+3. Select **setup** → **Run**. This creates the daily timers and syncs once. To sync right away later, run **syncAll**.
 
 From then on it runs by itself. Google emails you if a run fails.
 

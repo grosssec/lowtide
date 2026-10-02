@@ -57,7 +57,7 @@ export function MonthPage({ onGo }: { onGo: (tab: Tab) => void }) {
             budgets. Card purchases count the day you make them.
           </p>
           <div className="mt-2">
-            <Runway points={data.runway} paydays={data.paydays} low={{ date: safe.low.date, balance: safe.low.balance }} />
+            <Runway points={data.runway} paydays={data.paydays} low={{ date: safe.low.date, balance: safe.low.balance }} reserve={data.reserve} />
           </div>
           <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
             <div className="flex justify-between gap-2">
