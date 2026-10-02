@@ -21,6 +21,8 @@ interface BillDetails {
   amount: Cents;
   from?: ISODate;
   until?: ISODate;
+  /** Months without the bill (1 = January), e.g. no rent in the summer. */
+  monthsOff?: number[];
   paidWith?: PaidWith;
 }
 
@@ -62,6 +64,7 @@ export function billFlows(bills: MonthlyBill[], range: DateRange, holidays: Read
         : makeDate(m.year, m.month, Math.min(bill.day, daysInMonth(m.year, m.month)));
       if (!isWithin(date, range)) continue;
       if ((bill.from && date < bill.from) || (bill.until && date > bill.until)) continue;
+      if (bill.monthsOff?.includes(m.month)) continue;
       flows.push({
         date,
         amount: -bill.amount,

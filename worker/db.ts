@@ -99,14 +99,24 @@ export async function loadRules(db: D1Database): Promise<StoredRule[]> {
   }));
 }
 
-/** Hours from the timesheets, per job: they replace the planned hours up to the last synced day. */
+/**
+ * Hours from the timesheets, per job. They replace the forecast up to `through`: the day the sync says the sheet
+ * is complete to (a sheet filled every day), or else the last day with hours (a sheet filled at the end of the month).
+ */
 export async function loadHours(db: D1Database): Promise<LoggedHours> {
-  const { results } = await db.prepare('SELECT job_id, date, hours FROM hours').all<{ job_id: string; date: ISODate; hours: number }>();
+  const [{ results }, complete] = await Promise.all([
+    db.prepare('SELECT job_id, date, hours FROM hours').all<{ job_id: string; date: ISODate; hours: number }>(),
+    getSetting<Record<string, ISODate>>(db, 'hours_through'),
+  ]);
   const logged: LoggedHours = {};
   for (const row of results) {
     const job = (logged[row.job_id] ??= { actuals: {}, through: row.date });
     job.actuals[row.date] = row.hours;
     if (row.date > job.through) job.through = row.date;
+  }
+  for (const [jobId, through] of Object.entries(complete ?? {})) {
+    const job = (logged[jobId] ??= { actuals: {}, through });
+    if (through > job.through) job.through = through;
   }
   return logged;
 }

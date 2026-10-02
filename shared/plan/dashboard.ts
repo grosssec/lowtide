@@ -1,12 +1,13 @@
 import { addDays, addMonths, endOfMonth, makeDate, monthDay, monthKey, parts, toDayNumber, type ISODate } from '../engine/dates.ts';
-import { toCashFlows } from '../engine/flows.ts';
+import { billFlows, toCashFlows } from '../engine/flows.ts';
 import { holidaySet } from '../engine/holidays.ts';
 import type { Cents } from '../engine/money.ts';
 import { defaultHorizonEnd, project, type DayPoint } from '../engine/projection.ts';
 import type { LedgerEntry } from '../import/ledger.ts';
 import type { Actuals, PlanConfig } from './config.ts';
+import { monthlyBudgets, planFlows } from './forecast.ts';
 import { forwardFlows } from './forward.ts';
-import { monthlyBudgets, scenarioFlows } from './scenario.ts';
+import type { HoursBasis } from './hours.ts';
 
 export interface NamedAmount {
   name: string;
@@ -14,7 +15,18 @@ export interface NamedAmount {
 }
 
 export interface CategorySpending extends NamedAmount {
+  /** The month's budget: a day-to-day budget, or the bill amount. Null when the category has none. */
   budget: Cents | null;
+  kind: 'bill' | 'budget' | 'other';
+  /** Bills only: when it is due this month, and whether spending in the category already covers it. */
+  due?: ISODate;
+  paid?: boolean;
+}
+
+/** Next month's income per job, and the hours per week it is counted with. */
+export interface JobIncome extends HoursBasis {
+  amount: Cents;
+  paychecks: number;
 }
 
 export type AlertLevel = 'critical' | 'warning' | 'info';
@@ -23,7 +35,6 @@ export interface DashboardData {
   today: ISODate;
   month: string;
   isCurrentMonth: boolean;
-  scenarioLabel: string;
   /** Latest transaction date per account, so stale data is visible. */
   dataUntil: Record<string, ISODate>;
   /** When each balance was last typed in or confirmed by a balance alert. */
@@ -57,6 +68,7 @@ export interface DashboardData {
     free: Cents;
     covered: boolean;
     reserveGap: Cents | null;
+    byJob: JobIncome[];
   } | null;
   /** Lowest checking + cash balance ahead, with card bills paid on their due date. */
   cashLow: { date: ISODate; balance: Cents } | null;
@@ -77,7 +89,6 @@ const STALE_DAYS = 5;
 export function buildDashboard(input: { month: string; config: PlanConfig; actuals: Actuals; ledger: LedgerEntry[] }): DashboardData {
   const { month, config, actuals, ledger } = input;
   const today = actuals.today;
-  const scenario = config.mainScenarios[0];
   const isCurrentMonth = month === monthKey(today);
   const balances = { checking: actuals.checking, cash: actuals.cash, cardOwed: actuals.cardOwed, net: actuals.net };
 
@@ -90,18 +101,40 @@ export function buildDashboard(input: { month: string; config: PlanConfig; actua
   };
   const incomeTotals = totals(monthEntries.filter((e) => e.kind === 'income'), 1);
   const spendingTotals = totals(monthEntries.filter((e) => e.kind === 'expense'), -1);
-  const budgets = monthlyBudgets(config);
+  const budgets = monthlyBudgets(config, month);
   const income = [...incomeTotals.values()].reduce((a, b) => a + b, 0);
   const spending = [...spendingTotals.values()].reduce((a, b) => a + b, 0);
-  const categories = new Set([...spendingTotals.keys(), ...(isCurrentMonth ? Object.keys(budgets) : [])]);
+
+  // Every budget of the month, plus any category with spending: bills first (by due date), then budgets, then the rest.
+  const monthStartDate = `${month}-01`;
+  const monthHolidays = holidaySet(parts(monthStartDate).year, parts(monthStartDate).year);
+  const billsDue = new Map<string, { due: ISODate; amount: Cents }>();
+  for (const bill of billFlows(config.bills, { start: monthStartDate, end: endOfMonth(monthStartDate) }, monthHolidays)) {
+    const known = billsDue.get(bill.category);
+    billsDue.set(bill.category, { due: known && known.due < bill.date ? known.due : bill.date, amount: (known?.amount ?? 0) - bill.amount });
+  }
+  const budgetCategories = new Set(config.budgets.map((b) => b.category));
+  const rank = { bill: 0, budget: 1, other: 2 } as const;
+  const spendingByCategory: CategorySpending[] = [...new Set([...Object.keys(budgets), ...spendingTotals.keys()])]
+    .map((name) => {
+      const amount = spendingTotals.get(name) ?? 0;
+      const bill = budgetCategories.has(name) ? undefined : billsDue.get(name);
+      if (bill) return { name, amount, budget: budgets[name] ?? bill.amount, kind: 'bill' as const, due: bill.due, paid: amount >= bill.amount * 0.8 };
+      return { name, amount, budget: budgets[name] ?? null, kind: budgets[name] !== undefined ? ('budget' as const) : ('other' as const) };
+    })
+    .sort(
+      (a, b) =>
+        rank[a.kind] - rank[b.kind] ||
+        (a.kind === 'bill' ? (a.due ?? '').localeCompare(b.due ?? '') : 0) ||
+        (b.budget ?? 0) - (a.budget ?? 0) ||
+        b.amount - a.amount,
+    );
   const actual = {
     income,
     spending,
     result: income - spending,
     incomeBySource: [...incomeTotals].map(([name, amount]) => ({ name, amount })).sort(byAmountDesc),
-    spendingByCategory: [...categories]
-      .map((name) => ({ name, amount: spendingTotals.get(name) ?? 0, budget: budgets[name] ?? null }))
-      .sort((a, b) => b.amount - a.amount || (b.budget ?? 0) - (a.budget ?? 0)),
+    spendingByCategory,
   };
 
   const uncategorized = monthEntries.filter((e) => e.category.startsWith('Uncategorized')).length;
@@ -112,7 +145,6 @@ export function buildDashboard(input: { month: string; config: PlanConfig; actua
       today,
       month,
       isCurrentMonth,
-      scenarioLabel: scenario.label,
       dataUntil: actuals.dataUntil,
       checkedOn: actuals.checkedOn,
       reserve: config.reserve,
@@ -137,7 +169,7 @@ export function buildDashboard(input: { month: string; config: PlanConfig; actua
   const nextMonthEnd = endOfMonth(makeDate(next.year, next.month, 1));
   const flowsEnd = horizonEnd > nextMonthEnd ? horizonEnd : nextMonthEnd;
   const holidays = holidaySet(year, parts(flowsEnd).year);
-  const { paychecks, flows } = forwardFlows(config, scenario, actuals, flowsEnd, holidays);
+  const { paychecks, flows, hours } = forwardFlows(config, actuals, flowsEnd, holidays);
   const floor = [{ from: config.reserve.from, amount: config.reserve.amount }];
   const projection = project({ asOf: today, startBalance: actuals.net, flows, horizonEnd, floor });
   const low = projection.low;
@@ -161,6 +193,12 @@ export function buildDashboard(input: { month: string; config: PlanConfig; actua
   const alreadyWorked = paychecks
     .filter((p) => monthKey(p.payDate) === nextKey && p.period.end <= today)
     .reduce((a, p) => a + p.amount, 0);
+  const byJob: JobIncome[] = hours
+    .map((basis) => {
+      const checks = paychecks.filter((p) => p.jobId === basis.jobId && monthKey(p.payDate) === nextKey && p.amount > 0);
+      return { ...basis, amount: checks.reduce((a, p) => a + p.amount, 0), paychecks: checks.length };
+    })
+    .filter((job) => job.paychecks > 0);
 
   // Liquidity: checking + cash, with card purchases leaving checking on the card's due date.
   const cashFlows = toCashFlows(flows, { owed: actuals.cardOwed, dueDay: actuals.cardDueDay }, today);
@@ -194,7 +232,7 @@ export function buildDashboard(input: { month: string; config: PlanConfig; actua
 
   // Paychecks due by now: compare with what arrived under the job's name.
   const monthStart = `${monthKey(today)}-01`;
-  const duePaychecks = scenarioFlows(config, scenario, { start: monthStart, end: addDays(today, -2) }, holidays, actuals.hours).paychecks;
+  const duePaychecks = planFlows(config, { start: monthStart, end: addDays(today, -2) }, holidays, actuals.hours).paychecks;
   for (const job of config.jobs) {
     const expected = duePaychecks.filter((p) => p.jobId === job.id).reduce((a, p) => a + p.amount, 0);
     if (expected <= 0) continue;
@@ -222,7 +260,6 @@ export function buildDashboard(input: { month: string; config: PlanConfig; actua
     today,
     month,
     isCurrentMonth,
-    scenarioLabel: scenario.label,
     dataUntil: actuals.dataUntil,
     checkedOn: actuals.checkedOn,
     reserve: config.reserve,
@@ -236,7 +273,7 @@ export function buildDashboard(input: { month: string; config: PlanConfig; actua
       low: { date: low.date, balance: low.balance, floor: low.floor },
       horizonEnd,
     },
-    nextMonth: { month: nextKey, income: nextIncome, alreadyWorked, committed, free: nextIncome - committed, covered, reserveGap },
+    nextMonth: { month: nextKey, income: nextIncome, alreadyWorked, committed, free: nextIncome - committed, covered, reserveGap, byJob },
     cashLow: { date: cashLow.date, balance: cashLow.balance },
     upcoming,
     runway: projection.points,

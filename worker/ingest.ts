@@ -30,6 +30,8 @@ const hoursBody = z.object({
   /** The window the sheet covers: days inside it that are not in `days` are removed. Defaults to the first and last day sent. */
   from: isoDate.optional(),
   to: isoDate.optional(),
+  /** For a sheet filled every day: it is complete up to this day, so days without hours were days off. */
+  through: isoDate.optional(),
   days: z.array(z.object({ date: isoDate, hours: z.number().min(0).max(24) })).max(400),
 });
 
@@ -183,7 +185,11 @@ export const ingest = new Hono<AppEnv>()
     if (from > to) return c.json({ error: '"from" is after "to"' }, 400);
     const rows = dates.filter((d) => d >= from && d <= to).map((date) => ({ date, hours: Math.round(perDay.get(date)! * 100) / 100 }));
     await replaceHours(c.env.DB, body.jobId, from, to, rows);
-    return c.json({ jobId: body.jobId, from, to, days: rows.length, hours: rows.reduce((total, r) => total + r.hours, 0) });
+    if (body.through) {
+      const complete = (await getSetting<Record<string, ISODate>>(c.env.DB, 'hours_through')) ?? {};
+      await putSetting(c.env.DB, 'hours_through', { ...complete, [body.jobId]: body.through });
+    }
+    return c.json({ jobId: body.jobId, from, to, through: body.through ?? null, days: rows.length, hours: rows.reduce((total, r) => total + r.hours, 0) });
   })
 
   // What the script emails: today's numbers plus the alerts worth a heads-up.

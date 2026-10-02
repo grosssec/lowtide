@@ -15,28 +15,64 @@
     "cardDueDay": 20
   },
   "plan": {
-    "planEnd": "2027-03-31",
+    "version": 2,
     "reserve": {
       "amount": 50000,
       "from": "2026-11-30"
     },
-    "goal": {
-      "label": "Savings goal",
-      "amount": 200000,
-      "by": "2027-03-31",
-      "averageMonths": {
-        "start": "2027-02-01",
-        "end": "2027-03-31"
+    "goals": [
+      {
+        "id": "emergency",
+        "name": "Emergency fund",
+        "target": 150000,
+        "by": "2027-03-31"
+      },
+      {
+        "id": "laptop",
+        "name": "New laptop",
+        "target": 120000
       }
-    },
+    ],
     "jobs": [
       {
-        "id": "shop",
-        "name": "Shop",
+        "id": "campus",
+        "name": "Campus job",
         "rates": [
           {
             "from": "2026-01-01",
-            "centsPerHour": 1500
+            "centsPerHour": 1100
+          }
+        ],
+        "periods": [
+          {
+            "startDay": 1,
+            "endDay": "end",
+            "payMonthOffset": 1,
+            "payDate": {
+              "kind": "dayOfMonth",
+              "day": 15,
+              "roll": "forward"
+            }
+          }
+        ],
+        "weeklyHours": 15,
+        "skipHolidays": true,
+        "closures": [
+          {
+            "label": "Summer break",
+            "from": "2027-05-08",
+            "to": "2027-08-16",
+            "yearly": true
+          }
+        ]
+      },
+      {
+        "id": "agency",
+        "name": "Agency",
+        "rates": [
+          {
+            "from": "2026-01-01",
+            "centsPerHour": 2000
           }
         ],
         "periods": [
@@ -46,8 +82,8 @@
             "payMonthOffset": 0,
             "payDate": {
               "kind": "dayOfMonth",
-              "day": 20,
-              "roll": "backward"
+              "day": 16,
+              "roll": "forward"
             }
           },
           {
@@ -56,109 +92,92 @@
             "payMonthOffset": 1,
             "payDate": {
               "kind": "nthBusinessDay",
-              "n": 3
+              "n": 5
             }
           }
-        ]
+        ],
+        "weeklyHours": 20,
+        "maxWeeklyHours": 23,
+        "hoursSince": "2026-10-01",
+        "previousWeeklyHours": 12
       }
     ],
-    "hours": {
-      "conservative": {
-        "shop": {
-          "segments": [
-            {
-              "from": "2026-01-01",
-              "weeklyHours": 18
-            }
-          ]
-        }
-      },
-      "expected": {
-        "shop": {
-          "segments": [
-            {
-              "from": "2026-01-01",
-              "weeklyHours": 22
-            }
-          ]
-        }
-      }
-    },
-    "jobOptions": {
-      "same": {
-        "label": "same hours in 2027",
-        "changes": [
-          {
-            "jobId": "shop",
-            "segments": []
-          }
-        ]
-      },
-      "raise": {
-        "label": "raise in 2027",
-        "changes": [
-          {
-            "jobId": "shop",
-            "segments": [],
-            "rate": {
-              "from": "2027-01-01",
-              "centsPerHour": 1700
-            }
-          }
-        ]
-      }
-    },
-    "mainScenarios": [
+    "away": [
       {
-        "label": "Worst case",
-        "level": "conservative",
-        "option": "same"
+        "label": "Winter holidays",
+        "from": "2026-12-19",
+        "to": "2027-01-03",
+        "yearly": true,
+        "trip": true
       },
       {
-        "label": "Likely",
-        "level": "expected",
-        "option": "raise"
+        "label": "Summer away",
+        "from": "2027-05-15",
+        "to": "2027-08-05",
+        "yearly": true
       }
     ],
     "bills": [
       {
         "label": "Rent",
         "category": "Rent",
-        "amount": 70000,
-        "day": 1,
-        "paidWith": "checking"
+        "amount": 45000,
+        "rule": {
+          "kind": "nthBusinessDay",
+          "n": 5
+        },
+        "monthsOff": [
+          6,
+          7,
+          8
+        ]
       },
       {
         "label": "Phone",
         "category": "Phone",
-        "amount": 3000,
+        "amount": 2500,
+        "day": 28,
+        "paidWith": "card"
+      },
+      {
+        "label": "Streaming",
+        "category": "Subscriptions",
+        "amount": 1199,
         "day": 12,
         "paidWith": "card"
       }
     ],
-    "essentials": [
+    "budgets": [
       {
         "label": "Groceries",
         "category": "Groceries",
-        "monthly": 35000,
+        "monthly": 28000,
+        "lessOnTrips": true
+      },
+      {
+        "label": "Eating out",
+        "category": "Dining out",
+        "monthly": 12000,
+        "lessOnTrips": true
+      },
+      {
+        "label": "Shopping",
+        "category": "Shopping",
+        "monthly": 8000,
         "paidWith": "card"
       }
     ],
     "events": [
       {
-        "date": "2026-12-10",
-        "label": "Gifts",
-        "category": "Gifts",
-        "amount": 20000,
-        "paidWith": "card"
+        "date": "2027-01-05",
+        "label": "Tuition",
+        "category": "Tuition",
+        "amount": 60000,
+        "yearly": true
       }
     ],
-    "checkpoints": [
-      {
-        "label": "Holiday trip",
-        "date": "2026-12-18",
-        "horizonEnd": "2027-01-31"
-      }
+    "notes": [
+      "Taxes on freelance pay are not set aside yet."
     ]
   }
 }

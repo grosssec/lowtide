@@ -190,7 +190,7 @@ export function MonthLines({ months, series, floor }: { months: string[]; series
   return (
     <div ref={ref} className="relative">
       {width > 0 && (
-        <svg width={width} height={height} role="img" aria-label="Balance at the end of each month per scenario" onPointerMove={onPointer} onPointerLeave={() => setHover(null)} className="touch-pan-y">
+        <svg width={width} height={height} role="img" aria-label="Balance at the end of each month" onPointerMove={onPointer} onPointerLeave={() => setHover(null)} className="touch-pan-y">
           {ticks.map((t) => (
             <g key={t}>
               <line x1={gutter} x2={gutter + plotW} y1={y(t)} y2={y(t)} stroke={t === 0 ? 'var(--baseline)' : 'var(--line)'} />

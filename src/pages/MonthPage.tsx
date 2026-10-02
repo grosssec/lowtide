@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { DashboardData } from '../../shared/plan/index.ts';
+import { BudgetList } from '../components/budgets.tsx';
 import { BarList, Runway } from '../components/charts.tsx';
 import type { Tab } from '../components/Shell.tsx';
 import { Alerts, Button, Card, ErrorNote, Loading, Stat, StatusIcon } from '../components/ui.tsx';
@@ -42,17 +43,14 @@ export function MonthPage({ onGo }: { onGo: (tab: Tab) => void }) {
 
       {safe && (
         <Card>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="text-[13px] text-ink-2">Safe to spend</div>
-              <div className="mt-1 text-5xl font-semibold tracking-tight sm:text-6xl">{money(safe.amount)}</div>
-              <p className="mt-2 text-sm text-ink-2">
-                {safe.amount > 0
-                  ? `≈ ${money(safe.perDay)} a day until the ${safe.nextPayDate ? shortDate(safe.nextPayDate) : 'next'} paycheck`
-                  : `Essentials only until the ${safe.nextPayDate ? shortDate(safe.nextPayDate) : 'next'} paycheck`}
-              </p>
-            </div>
-            <span className="shrink-0 rounded-full border border-line px-2.5 py-1 text-xs text-ink-2">{data.scenarioLabel}</span>
+          <div>
+            <div className="text-[13px] text-ink-2">Safe to spend</div>
+            <div className="mt-1 text-5xl font-semibold tracking-tight sm:text-6xl">{money(safe.amount)}</div>
+            <p className="mt-2 text-sm text-ink-2">
+              {safe.amount > 0
+                ? `≈ ${money(safe.perDay)} a day until the ${safe.nextPayDate ? shortDate(safe.nextPayDate) : 'next'} paycheck`
+                : `Essentials only until the ${safe.nextPayDate ? shortDate(safe.nextPayDate) : 'next'} paycheck`}
+            </p>
           </div>
           <div className="mt-4">
             <Runway points={data.runway} paydays={data.paydays} low={{ date: safe.low.date, balance: safe.low.balance }} />
@@ -123,6 +121,15 @@ export function MonthPage({ onGo }: { onGo: (tab: Tab) => void }) {
               </dt>
               <dd className="num">{money(next.income)}</dd>
             </div>
+            {next.byJob.map((job) => (
+              <div key={job.jobId} className="flex justify-between gap-2 pl-3 text-xs text-muted">
+                <dt>
+                  {job.jobName} · {job.paychecks} paycheck{job.paychecks === 1 ? '' : 's'} · {job.weeklyHours} h/week
+                  {job.source === 'timesheet' ? ` (your last ${job.weeks} weeks)` : ' (usual)'}
+                </dt>
+                <dd className="num">{money(job.amount)}</dd>
+              </div>
+            ))}
             <div className="flex justify-between gap-2">
               <dt className="text-ink-2">Bills and day-to-day</dt>
               <dd className="num">{money(-next.committed)}</dd>
@@ -148,8 +155,15 @@ export function MonthPage({ onGo }: { onGo: (tab: Tab) => void }) {
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Card title="Where it went">
-          <BarList rows={data.actual.spendingByCategory} empty="No spending imported for this month yet." />
+        <Card
+          title="Where it went"
+          action={
+            <Button variant="quiet" className="h-7 px-2.5 text-xs" onClick={() => onGo('settings')}>
+              Edit budgets
+            </Button>
+          }
+        >
+          <BudgetList rows={data.actual.spendingByCategory} />
         </Card>
         <div className="min-w-0 space-y-4">
           <Card title="Where it came from">

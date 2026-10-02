@@ -1,51 +1,74 @@
-import { monthKey, type DateRange, type ISODate } from '../engine/dates.ts';
+import { monthKey, type ISODate } from '../engine/dates.ts';
 import type { DailyEssential, MonthlyBill, OneOffEvent } from '../engine/flows.ts';
 import type { Cents } from '../engine/money.ts';
-import type { HoursPlan, HoursSegment, Job, RateChange } from '../engine/schedule.ts';
+import type { Job } from '../engine/schedule.ts';
 import type { LedgerEntry } from '../import/ledger.ts';
 
-export type Level = 'conservative' | 'expected';
-
-/** Hours and/or rate changes for one job inside a what-if option. */
-export interface JobChange {
-  jobId: string;
-  /** Appended to the job's hours plan, so they win over earlier segments. */
-  segments: HoursSegment[];
-  rate?: RateChange;
-}
-
-/** A mutually exclusive what-if, e.g. "internship in spring" vs "no internship, more hours at the agency". */
-export interface JobOption {
+/** A stretch of days, optionally on the same dates every year (a break, the summer). */
+export interface Period {
   label: string;
-  changes: JobChange[];
+  from: ISODate;
+  to: ISODate;
+  yearly?: boolean;
 }
 
-export interface Scenario {
-  label: string;
-  level: Level;
-  option: string;
+/** Time away: no job pays while away. On a trip, everyday budgets (groceries, snacks, eating out) drop to a quarter. */
+export interface AwayPeriod extends Period {
+  trip?: boolean;
 }
+
+/** A job with its pay schedule and the hours it usually has. */
+export interface JobConfig extends Job {
+  /** Usual hours per week, used until the timesheet shows enough weeks. */
+  weeklyHours: number;
+  /** The forecast never counts more than this per week: extra hours stay extra. Defaults to weeklyHours. */
+  maxWeeklyHours?: number;
+  /** When the usual hours last changed: only weeks from this date on teach the forecast. */
+  hoursSince?: ISODate;
+  /** Usual hours before hoursSince, for paychecks that still pay for those days. */
+  previousWeeklyHours?: number;
+  /** Days of the week worked (0 = Sunday). Defaults to Monday to Friday. */
+  workDays?: number[];
+  /** No work on US federal holidays (e.g. a campus job). */
+  skipHolidays?: boolean;
+  /** When this job has no work, e.g. the campus store closed in summer. */
+  closures?: Period[];
+  start?: ISODate;
+  end?: ISODate;
+}
+
+/** A savings goal. The list order is the priority: earlier goals get the money first. */
+export interface Goal {
+  id: string;
+  name: string;
+  target: Cents;
+  by?: ISODate;
+}
+
+/** Day-to-day budget for one category, spread over the month. */
+export type Budget = Omit<DailyEssential, 'adjustments'> & {
+  /** Drops to a quarter during trips (you are not buying groceries at home). */
+  lessOnTrips?: boolean;
+};
+
+export type Bill = MonthlyBill;
+
+/** A one-off expense (or income, when negative), optionally on the same date every year. */
+export type PlannedEvent = OneOffEvent & { yearly?: boolean };
 
 export interface PlanConfig {
-  planEnd: ISODate;
+  version: 2;
   /** Money that is never available to spend, from a date on. */
   reserve: { amount: Cents; from: ISODate };
-  goal: { label: string; amount: Cents; by: ISODate; averageMonths: DateRange };
-  jobs: Job[];
-  hours: Record<Level, Record<string, HoursPlan>>;
-  jobOptions: Record<string, JobOption>;
-  /** Shown side by side. The first one drives the Month screen, so it should be the cautious one. */
-  mainScenarios: Scenario[];
+  goals: Goal[];
+  jobs: JobConfig[];
+  away: AwayPeriod[];
   /** Bill categories should not overlap with budget categories (spending in a category pays the bill first). */
-  bills: MonthlyBill[];
-  /** Day-to-day spending per category (monthly budget, spread per day). */
-  essentials: DailyEssential[];
-  events: OneOffEvent[];
-  /** "How much can I spend on this date without breaking anything until horizonEnd?" */
-  checkpoints: { label: string; date: ISODate; horizonEnd: ISODate }[];
-  /** Assumptions worth checking again, shown on the Plan screen. */
-  assumptions?: string[];
-  notIncluded?: string[];
+  bills: Bill[];
+  budgets: Budget[];
+  events: PlannedEvent[];
+  /** Free-form reminders shown on the Plan screen. */
+  notes?: string[];
 }
 
 export interface Snapshot {

@@ -1,7 +1,7 @@
 import { HTTPException } from 'hono/http-exception';
 import type { ISODate } from '../shared/engine/index.ts';
-import { computeActuals, type Actuals, type Balances, type PlanConfig } from '../shared/plan/index.ts';
-import { getSetting, loadHours, loadLedger, type Entry } from './db.ts';
+import { computeActuals, migratePlan, type Actuals, type Balances, type PlanConfig } from '../shared/plan/index.ts';
+import { getSetting, loadHours, loadLedger, putSetting, type Entry } from './db.ts';
 
 /** A calendar date in Ricardo's time zone, not UTC. */
 export const todayIn = (timeZone: string, at = new Date()): ISODate =>
@@ -11,8 +11,11 @@ export const hourIn = (timeZone: string, at = new Date()): number =>
   Number(new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', hourCycle: 'h23' }).format(at));
 
 export async function loadPlan(db: D1Database): Promise<{ plan: PlanConfig; balances: Balances }> {
-  const [plan, balances] = await Promise.all([getSetting<PlanConfig>(db, 'plan'), getSetting<Balances>(db, 'balances')]);
-  if (!plan || !balances) throw new HTTPException(409, { message: 'Plan or balances are missing. Run the seed or fill in Settings.' });
+  const [stored, balances] = await Promise.all([getSetting<unknown>(db, 'plan'), getSetting<Balances>(db, 'balances')]);
+  if (!stored || !balances) throw new HTTPException(409, { message: 'Plan or balances are missing. Run the seed or fill in Settings.' });
+  const plan = migratePlan(stored);
+  // An older plan is stored in the current format from now on.
+  if (plan !== stored) await putSetting(db, 'plan', plan);
   return { plan, balances };
 }
 

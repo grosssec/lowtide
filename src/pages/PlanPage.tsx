@@ -1,49 +1,77 @@
 import { useMemo, useState } from 'react';
 import type { Actuals, PlanConfig } from '../../shared/plan/config.ts';
-import { buildYearPlan } from '../../shared/plan/year.ts';
+import { buildYearPlan, type GoalStatus } from '../../shared/plan/year.ts';
 import { MonthLines } from '../components/charts.tsx';
-import { Card, ErrorNote, Loading } from '../components/ui.tsx';
+import type { Tab } from '../components/Shell.tsx';
+import { Button, Card, ErrorNote, Loading, StatusIcon } from '../components/ui.tsx';
 import { money, monthLabel, monthShort, shortDate } from '../lib/format.ts';
 import { useApi } from '../lib/useApi.ts';
 
-const COLORS = ['var(--series-1)', 'var(--series-2)'];
+const longDate = (iso: string, today: string) => (iso.slice(0, 4) === today.slice(0, 4) ? shortDate(iso) : `${shortDate(iso)}, ${iso.slice(0, 4)}`);
 
-export function PlanPage() {
+function GoalRow({ goal, today }: { goal: GoalStatus; today: string }) {
+  const nowShare = Math.min(1, goal.now / goal.target);
+  const projectedShare = Math.min(1, goal.projected / goal.target);
+  const when = goal.hasDate ? `by ${longDate(goal.date, today)}` : 'no date';
+  return (
+    <li>
+      <div className="flex items-baseline justify-between gap-3 text-sm">
+        <span className="truncate font-medium text-ink">{goal.name}</span>
+        <span className="num shrink-0 text-ink-2">
+          {money(goal.target)} <span className="text-muted">{when}</span>
+        </span>
+      </div>
+      <div className="relative mt-2 h-2.5 rounded-full bg-surface-2" aria-hidden="true">
+        <div className="absolute inset-y-0 left-0 rounded-full bg-series-1-soft" style={{ width: `${projectedShare * 100}%` }} />
+        <div className="absolute inset-y-0 left-0 rounded-full bg-series-1" style={{ width: `${nowShare * 100}%` }} />
+      </div>
+      <div className="mt-1.5 flex flex-wrap justify-between gap-x-4 gap-y-1 text-xs text-muted">
+        <span>
+          Now <span className="num text-ink">{money(goal.now)}</span>
+        </span>
+        <span>
+          {goal.hasDate ? `On ${longDate(goal.date, today)}` : 'In 12 months'}: <span className="num text-ink">{money(goal.projected)}</span>
+        </span>
+      </div>
+      <p className="mt-1.5 flex items-center gap-2 text-sm text-ink">
+        <StatusIcon level={goal.reached ? 'good' : 'warning'} />
+        {goal.reached ? 'On track with the forecast' : `${money(goal.shortBy)} short · save ≈ ${money(goal.perMonth)} more a month to make it`}
+      </p>
+    </li>
+  );
+}
+
+export function PlanPage({ onGo }: { onGo: (tab: Tab) => void }) {
   const { data: inputs, error } = useApi<{ plan: PlanConfig; actuals: Actuals }>('/plan');
   // Computed here, not on the Worker: it needs more CPU than the free plan allows per request.
   const data = useMemo(() => (inputs ? buildYearPlan(inputs.plan, inputs.actuals) : undefined), [inputs]);
   const [view, setView] = useState<'total' | 'free'>('total');
   if (!data || !inputs) return error ? <ErrorNote message={error} /> : <Loading />;
 
-  const months = data.scenarios[0]?.months.map((m) => m.month) ?? [];
+  const months = data.months.map((m) => m.month);
   const floor = months.map((m) => (`${m}-31` >= data.reserve.from ? data.reserve.amount : null));
-  const goal = data.goal;
   const reserve = money(data.reserve.amount);
   const toggle = 'h-7 rounded-md px-2.5 text-xs font-medium transition';
+  const edit = (
+    <Button variant="quiet" className="h-7 px-2.5 text-xs" onClick={() => onGo('settings')}>
+      Edit
+    </Button>
+  );
 
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight">Plan until {months.length ? monthLabel(months[months.length - 1]) : '—'}</h1>
+        <h1 className="text-lg font-semibold tracking-tight">
+          Next 12 months <span className="font-normal text-muted">· until {monthLabel(months[months.length - 1])}</span>
+        </h1>
         <p className="mt-1 text-sm text-ink-2">
-          Starts from today&apos;s total of {money(inputs.actuals.net)} (bank + cash − card, the {reserve} reserve included) and the bills, budgets and
-          events in Settings.
+          One forecast from today&apos;s total of {money(inputs.actuals.net)} (bank + cash − card, the {reserve} reserve included). It updates itself as
+          transactions and hours come in.
         </p>
       </div>
 
       <Card title="Balance at the end of each month">
-        <MonthLines
-          months={months.map(monthShort)}
-          series={data.scenarios.map((s, i) => ({ label: s.label, color: COLORS[i % COLORS.length], values: s.months.map((m) => m.endBalance) }))}
-          floor={floor}
-        />
-        <ul className="mt-3 space-y-1 text-xs text-muted">
-          {data.scenarios.map((s) => (
-            <li key={s.label}>
-              <span className="font-medium text-ink-2">{s.label}:</span> {s.level} hours, {s.optionLabel}
-            </li>
-          ))}
-        </ul>
+        <MonthLines months={months.map(monthShort)} series={[{ label: 'Forecast', color: 'var(--series-1)', values: data.months.map((m) => m.endBalance) }]} floor={floor} />
       </Card>
 
       <Card
@@ -73,38 +101,34 @@ export function PlanPage() {
           <thead>
             <tr className="text-left text-xs text-muted">
               <th className="py-1.5 font-normal">Month</th>
-              {data.scenarios.map((s) => (
-                <th key={s.label} className="py-1.5 text-right font-normal">
-                  {s.label}
-                </th>
-              ))}
+              <th className="hidden py-1.5 text-right font-normal sm:table-cell">In</th>
+              <th className="hidden py-1.5 text-right font-normal sm:table-cell">Out</th>
+              <th className="py-1.5 text-right font-normal">Result</th>
+              <th className="py-1.5 text-right font-normal">{view === 'total' ? 'Balance' : 'Above reserve'}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
-            {months.map((month, i) => (
-              <tr key={month}>
-                <td className="py-2 text-ink-2">{monthShort(month)}</td>
-                {data.scenarios.map((s) => {
-                  const row = s.months[i];
-                  const belowReserve = floor[i] !== null && row.endBalance < (floor[i] ?? 0);
-                  const shown = view === 'free' ? row.endBalance - (floor[i] ?? 0) : row.endBalance;
-                  return (
-                    <td key={s.label} className="py-2 text-right">
-                      <div className="text-ink">
-                        {money(shown)}
-                        {belowReserve && <span className="sr-only"> (below the reserve)</span>}
-                        {belowReserve && (
-                          <span aria-hidden="true" className="ml-1 text-warning">
-                            ▲
-                          </span>
-                        )}
-                      </div>
-                      <div className={`text-xs ${row.result < 0 ? 'text-critical-ink' : 'text-muted'}`}>{money(row.result, { sign: true })} in the month</div>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+            {data.months.map((row, i) => {
+              const belowReserve = floor[i] !== null && row.endBalance < (floor[i] ?? 0);
+              const shown = view === 'free' ? row.endBalance - (floor[i] ?? 0) : row.endBalance;
+              return (
+                <tr key={row.month}>
+                  <td className="py-2 text-ink-2">{monthShort(row.month)}</td>
+                  <td className="hidden py-2 text-right text-ink-2 sm:table-cell">{money(row.income)}</td>
+                  <td className="hidden py-2 text-right text-ink-2 sm:table-cell">{money(row.spending)}</td>
+                  <td className={`py-2 text-right ${row.result < 0 ? 'text-critical-ink' : 'text-ink-2'}`}>{money(row.result, { sign: true })}</td>
+                  <td className="py-2 text-right text-ink">
+                    {money(shown)}
+                    {belowReserve && <span className="sr-only"> (below the reserve)</span>}
+                    {belowReserve && (
+                      <span aria-hidden="true" className="ml-1 text-warning">
+                        ▲
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         <p className="mt-2 text-xs text-muted">
@@ -115,73 +139,60 @@ export function PlanPage() {
         </p>
       </Card>
 
-      {data.checkpoints.length > 0 && (
-        <Card title="Room to spend without touching the reserve">
+      <Card title="Goals" action={edit}>
+        {data.goals.length ? (
+          <>
+            <ul className="space-y-5">
+              {data.goals.map((goal) => (
+                <GoalRow key={goal.id} goal={goal} today={data.today} />
+              ))}
+            </ul>
+            <p className="mt-4 text-xs text-muted">
+              Goals fill in order, after the {reserve} reserve: a goal counts only what is left once the ones above it are complete. Dark bar: now. Light bar:
+              the forecast on the goal&apos;s date.
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-muted">No goals yet. Add one in Settings, with or without a date.</p>
+        )}
+      </Card>
+
+      {data.trips.length > 0 && (
+        <Card title="Room to spend on trips">
           <ul className="divide-y divide-line text-sm">
-            {data.checkpoints.map((c) => (
-              <li key={c.label} className="py-2">
-                <div className="text-ink">{c.label}</div>
-                <div className="mt-0.5 flex flex-wrap gap-x-4 text-ink-2">
-                  {c.room.map((room, i) => (
-                    <span key={data.scenarios[i].label} className="num">
-                      {data.scenarios[i].label}: <span className="font-medium text-ink">{money(room)}</span>
-                    </span>
-                  ))}
-                </div>
+            {data.trips.map((trip) => (
+              <li key={`${trip.label}-${trip.start}`} className="flex items-baseline justify-between gap-3 py-2">
+                <span className="min-w-0">
+                  <span className="text-ink">{trip.label}</span>{' '}
+                  <span className="text-xs text-muted">
+                    {shortDate(trip.start)} – {shortDate(trip.end)}
+                  </span>
+                </span>
+                <span className="num shrink-0 font-medium text-ink">{money(trip.room)}</span>
               </li>
             ))}
           </ul>
+          <p className="mt-2 text-xs text-muted">The most you can spend from the first day of each trip and still keep the reserve until the month after it.</p>
         </Card>
       )}
 
-      <Card title={`${goal.label} · goal ${money(goal.amount)} by ${shortDate(goal.by)}`}>
-        <p className="-mt-1 mb-3 text-xs text-muted">Money above the {reserve} reserve on {shortDate(goal.by)}, for each work option.</p>
-        <ul className="space-y-4">
-          {goal.options.map((option) => (
-            <li key={option.key}>
-              <div className="text-sm text-ink">{option.label}</div>
-              {(['conservative', 'expected'] as const).map((level) => {
-                const value = option.aboveReserve[level];
-                const share = Math.max(0, Math.min(1, value / goal.amount));
-                return (
-                  <div key={level} className="mt-1.5">
-                    <div className="flex justify-between text-xs text-ink-2">
-                      <span>{level === 'conservative' ? 'Fewer hours' : 'More hours'}</span>
-                      <span className="num text-ink">{money(value)}</span>
-                    </div>
-                    <div className="mt-1 h-2 rounded-full bg-surface-2">
-                      <div className="h-2 rounded-full bg-series-1" style={{ width: `${share * 100}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-              <div className="mt-1 text-xs text-muted">
-                Average month: {money(option.averageResult.conservative, { sign: true })} to {money(option.averageResult.expected, { sign: true })}
-              </div>
-            </li>
+      <Card title="What the forecast assumes" action={edit}>
+        <ul className="list-disc space-y-1.5 pl-5 text-sm text-ink-2">
+          {data.assumptions.map((item) => (
+            <li key={item}>{item}</li>
           ))}
         </ul>
+        {data.notes.length > 0 && (
+          <>
+            <h3 className="mb-1.5 mt-4 text-xs font-medium text-muted">Your notes</h3>
+            <ul className="list-disc space-y-1.5 pl-5 text-sm text-ink-2">
+              {data.notes.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </>
+        )}
       </Card>
-
-      {data.assumptions.length > 0 && (
-        <Card title="Assumptions to check">
-          <ul className="list-disc space-y-1 pl-5 text-sm text-ink-2">
-            {data.assumptions.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </Card>
-      )}
-
-      {data.notIncluded.length > 0 && (
-        <Card title="Not in these numbers yet">
-          <ul className="list-disc space-y-1 pl-5 text-sm text-ink-2">
-            {data.notIncluded.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </Card>
-      )}
     </div>
   );
 }

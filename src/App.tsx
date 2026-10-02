@@ -47,7 +47,7 @@ export default function App() {
   return (
     <Shell tab={tab} onTab={setTab}>
       {tab === 'month' && <MonthPage onGo={setTab} />}
-      {tab === 'plan' && <PlanPage />}
+      {tab === 'plan' && <PlanPage onGo={setTab} />}
       {tab === 'transactions' && <TransactionsPage />}
       {tab === 'settings' && <SettingsPage />}
     </Shell>

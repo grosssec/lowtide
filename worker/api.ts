@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { monthKey, type ISODate } from '../shared/engine/index.ts';
+import { addDays, holidaySet, monthKey, parts, toDayNumber, type ISODate } from '../shared/engine/index.ts';
 import { DEFAULT_RULES, makeCategorizer, settleAlertEntries, toLedgerEntries, type ParsedFile } from '../shared/import/index.ts';
-import { buildDashboard, computeActuals, monthlyBudgets, type PlanConfig } from '../shared/plan/index.ts';
+import { buildDashboard, computeActuals, monthlyBudgets, weeklyHoursBasis, type PlanConfig } from '../shared/plan/index.ts';
 import type { AppEnv } from './auth.ts';
 import { deleteEntries, getEntry, getSetting, insertEntries, loadLedger, loadRules, putSetting, updateCategory, type Entry } from './db.ts';
 import { PUSH_HOSTS, sendDaily } from './notify.ts';
@@ -44,18 +44,52 @@ const cashBody = z.object({
   kind,
 });
 
-/** Light structural check for a saved plan; the dashboard pass catches the rest. */
+const label = z.string().trim().min(1).max(80);
+const cents = z.number().int().min(0).max(100_000_000);
+const hours = z.number().min(0).max(80);
+const periodFields = { label, from: isoDate, to: isoDate, yearly: z.boolean().optional() };
+const inOrder = (p: { from: string; to: string }) => p.from <= p.to;
+const period = z.object(periodFields).refine(inOrder, 'The end is before the start');
+
+/** The plan as Settings saves it (version 2). The dashboard pass afterwards catches anything the shape can't. */
 const planShape = z.object({
-  planEnd: isoDate,
-  reserve: z.object({ amount: z.number().int().min(0), from: isoDate }),
-  goal: z.object({ label: z.string(), amount: z.number().int(), by: isoDate, averageMonths: z.object({ start: isoDate, end: isoDate }) }),
-  jobs: z.array(z.looseObject({ id: z.string(), name: z.string() })),
-  mainScenarios: z.array(z.object({ label: z.string(), level: z.enum(['conservative', 'expected']), option: z.string() })).min(1),
-  bills: z.array(z.looseObject({ label: z.string(), category: z.string(), amount: z.number().int().min(0) })),
-  essentials: z.array(z.looseObject({ label: z.string(), category: z.string(), monthly: z.number().int().min(0) })),
-  events: z.array(z.looseObject({ date: isoDate, label: z.string(), category: z.string(), amount: z.number().int() })),
-  checkpoints: z.array(z.object({ label: z.string(), date: isoDate, horizonEnd: isoDate })),
+  version: z.literal(2),
+  reserve: z.object({ amount: cents, from: isoDate }),
+  goals: z.array(z.object({ id: z.string().min(1).max(40), name: label, target: cents.min(1), by: isoDate.optional() })).max(20),
+  jobs: z
+    .array(
+      z.looseObject({
+        id: z.string().min(1).max(40),
+        name: label,
+        rates: z.array(z.object({ from: isoDate, centsPerHour: cents })).min(1),
+        periods: z.array(z.looseObject({})).min(1),
+        weeklyHours: hours,
+        maxWeeklyHours: hours.optional(),
+        hoursSince: isoDate.optional(),
+        closures: z.array(period).max(20).optional(),
+      }),
+    )
+    .max(10),
+  away: z.array(z.object({ ...periodFields, trip: z.boolean().optional() }).refine(inOrder, 'The end is before the start')).max(30),
+  bills: z.array(z.looseObject({ label, category: label, amount: cents, monthsOff: z.array(z.number().int().min(1).max(12)).optional() })).max(50),
+  budgets: z.array(z.looseObject({ label, category: label, monthly: cents, lessOnTrips: z.boolean().optional() })).max(50),
+  events: z.array(z.looseObject({ date: isoDate, label, category: label, amount: z.number().int(), yearly: z.boolean().optional() })).max(100),
+  notes: z.array(z.string().trim().max(300)).max(30).optional(),
 });
+
+/** Average spending per category over the last 90 days of data, per month: a starting point for budgets. */
+function recentAverages(ledger: Entry[]): { from: ISODate; to: ISODate; perMonth: Record<string, number> } | null {
+  const spending = ledger.filter((e) => e.kind === 'expense');
+  if (!spending.length) return null;
+  const to = spending.reduce((max, e) => (e.date > max ? e.date : max), spending[0].date);
+  const first = spending.reduce((min, e) => (e.date < min ? e.date : min), spending[0].date);
+  const from = addDays(to, -89) > first ? addDays(to, -89) : first;
+  const days = toDayNumber(to) - toDayNumber(from) + 1;
+  const totals: Record<string, number> = {};
+  for (const e of spending) if (e.date >= from) totals[e.category] = (totals[e.category] ?? 0) - e.amount;
+  const perMonth = Object.fromEntries(Object.entries(totals).map(([category, total]) => [category, Math.round((total / days) * (365 / 12))]));
+  return { from, to, perMonth };
+}
 
 const importBody = z.object({
   file: z.string().trim().min(1).max(200),
@@ -215,7 +249,9 @@ export const api = new Hono<AppEnv>()
 
   .get('/settings', async (c) => {
     const db = c.env.DB;
-    const { plan, balances, ledger, actuals } = await loadState(c.env);
+    const { plan, balances, ledger, actuals, today } = await loadState(c.env);
+    const year = parts(today).year;
+    const holidays = holidaySet(year - 1, year + 1);
     const [rules, imports, lastAlert, hours, devices] = await Promise.all([
       loadRules(db),
       db.prepare('SELECT file, account, rows, added, note, created_at FROM imports ORDER BY id DESC LIMIT 10').all(),
@@ -240,6 +276,8 @@ export const api = new Hono<AppEnv>()
         ready: Boolean(c.env.INGEST_TOKEN),
       },
       push: { ready: Boolean(c.env.VAPID_PUBLIC_KEY && c.env.VAPID_PRIVATE_JWK), devices: devices?.n ?? 0 },
+      hoursBasis: plan.jobs.map((job) => weeklyHoursBasis(job, plan.away, actuals.hours?.[job.id], holidays)),
+      averages: recentAverages(ledger),
     });
   })
 
@@ -257,9 +295,6 @@ export const api = new Hono<AppEnv>()
       planShape.parse(plan);
       const today = todayIn(c.env.TIMEZONE);
       buildDashboard({ month: monthKey(today), config: plan, actuals: computeActuals(balances, [], today), ledger: [] });
-      for (const scenario of plan.mainScenarios) {
-        if (!plan.jobOptions[scenario.option]) throw new Error(`Scenario "${scenario.label}" uses unknown option "${scenario.option}"`);
-      }
     } catch (error) {
       const reason =
         error instanceof z.ZodError ? error.issues.map((i) => `${i.path.join('.') || 'plan'}: ${i.message}`).join('; ') : (error as Error).message;

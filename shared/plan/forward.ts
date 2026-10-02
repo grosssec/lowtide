@@ -1,13 +1,12 @@
 import { addDays, eachDay, endOfMonth, isWithin, monthKey, type ISODate } from '../engine/dates.ts';
 import { billFlows, type DailyEssential, type Flow } from '../engine/flows.ts';
 import type { Cents } from '../engine/money.ts';
-import type { Paycheck } from '../engine/schedule.ts';
-import type { Actuals, PlanConfig, Scenario } from './config.ts';
-import { scenarioFlows } from './scenario.ts';
+import type { Actuals, PlanConfig } from './config.ts';
+import { budgetsWithTrips, planFlows, type Forecast } from './forecast.ts';
 
 const byDate = (a: Flow, b: Flow) => a.date.localeCompare(b.date);
 
-/** A monthly budget spread evenly over the days of its month, scaled by trip factors. */
+/** A monthly budget spread evenly over the days of its month, scaled during trips. */
 function dailyWeight(items: DailyEssential[], date: ISODate, daysInMonth: number): number {
   let total = 0;
   for (const item of items) {
@@ -18,28 +17,24 @@ function dailyWeight(items: DailyEssential[], date: ISODate, daysInMonth: number
 }
 
 /**
- * What the plan still expects after today, adjusted for what already happened this month:
+ * What the forecast still expects after today, adjusted for what already happened this month:
  * - day-to-day budgets for the rest of this month = what is left of each budget, spread over the remaining days;
  * - bills due on or before today that are not in the books yet move to tomorrow, so nothing is forgotten;
  * - paychecks and events dated today or earlier are left out (they are in the books, or not counted).
  */
-export function forwardFlows(
-  config: PlanConfig,
-  scenario: Scenario,
-  actuals: Actuals,
-  end: ISODate,
-  holidays: ReadonlySet<ISODate>,
-): { paychecks: Paycheck[]; flows: Flow[] } {
+export function forwardFlows(config: PlanConfig, actuals: Actuals, end: ISODate, holidays: ReadonlySet<ISODate>): Forecast {
   const today = actuals.today;
   const tomorrow = addDays(today, 1);
   const monthStart = `${monthKey(today)}-01`;
   const monthEnd = endOfMonth(today);
-  const { paychecks, flows } = scenarioFlows(config, scenario, { start: tomorrow, end }, holidays, actuals.hours);
-  const result = flows.filter((f) => !(f.kind === 'essential' && f.date <= monthEnd));
+  const forecast = planFlows(config, { start: tomorrow, end }, holidays, actuals.hours);
+  const result = forecast.flows.filter((f) => !(f.kind === 'essential' && f.date <= monthEnd));
 
   if (tomorrow <= monthEnd) {
     const categories = new Map<string, DailyEssential[]>();
-    for (const item of config.essentials) categories.set(item.category, [...(categories.get(item.category) ?? []), item]);
+    for (const item of budgetsWithTrips(config, { start: monthStart, end: monthEnd })) {
+      categories.set(item.category, [...(categories.get(item.category) ?? []), item]);
+    }
     const remaining = eachDay(tomorrow, monthEnd);
     const days = eachDay(monthStart, monthEnd).length;
     for (const [category, items] of categories) {
@@ -74,5 +69,5 @@ export function forwardFlows(
     result.push({ ...bill, date: tomorrow, label: `${bill.label} (not seen yet)` });
   }
 
-  return { paychecks, flows: result.sort(byDate) };
+  return { ...forecast, flows: result.sort(byDate) };
 }
