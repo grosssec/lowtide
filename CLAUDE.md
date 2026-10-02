@@ -24,6 +24,7 @@ Ricardo's personal finance dashboard. Product decisions and status: vault note `
 - Engine changes are test-first: every pay-schedule or projection rule gets a fixture test.
 - UI copy in English. Conventional Commits.
 - Nothing goes live (deploy, bank connections, DNS, paid services) without Ricardo's OK. Deploy steps: `DEPLOY.md`.
+- Production D1 is the source of truth for the plan and balances once Ricardo edits them in the app. Pull them into `data/plan.local.json` before any `seed -- --plan --remote`, or his edits are lost.
 - Data endpoints need a session; state-changing calls need the `X-Requested-With: finance-dashboard` header (the `src/lib/api.ts` wrapper sends it). Only `/api/ingest/*` skips both and uses the bearer token instead.
 - Apps Script code (`apps-script/Code.gs`) is plain V8 JavaScript; its pure helpers are tested in `test/apps-script/` through `node:vm`. Gmail access stays read-only (advanced Gmail API, `gmail.readonly`).
 

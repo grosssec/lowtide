@@ -52,19 +52,25 @@ export function MonthPage({ onGo }: { onGo: (tab: Tab) => void }) {
                 : `Essentials only until the ${safe.nextPayDate ? shortDate(safe.nextPayDate) : 'next'} paycheck`}
             </p>
           </div>
-          <div className="mt-4">
+          <p className="mt-4 text-xs text-muted">
+            Forecast, day by day, from today to {shortDate(safe.horizonEnd)}: it starts at today&apos;s total and adds the paychecks, minus bills and
+            budgets. Card purchases count the day you make them.
+          </p>
+          <div className="mt-2">
             <Runway points={data.runway} paydays={data.paydays} low={{ date: safe.low.date, balance: safe.low.balance }} />
           </div>
           <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
             <div className="flex justify-between gap-2">
-              <dt className="text-muted">Tightest day</dt>
+              <dt className="text-muted">Lowest total</dt>
               <dd className="num text-ink">
                 {shortDate(safe.low.date)} · {money(safe.low.balance)}
               </dd>
             </div>
             {data.cashLow && (
               <div className="flex justify-between gap-2">
-                <dt className="text-muted">Lowest in checking + cash</dt>
+                <dt className="text-muted" title="What the bank and the wallet hold: the card bill leaves the bank on its due date">
+                  Lowest in bank + cash
+                </dt>
                 <dd className="num text-ink">
                   {shortDate(data.cashLow.date)} · {money(data.cashLow.balance)}
                 </dd>
