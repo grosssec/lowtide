@@ -12,7 +12,7 @@ Ricardo's personal finance dashboard. Product decisions and status: vault note `
 
 ## Commands
 - `npm run dev`: app + Worker locally (`.dev.vars` `DEV_AUTH_BYPASS=1` skips sign-in on localhost only)
-- `npm run db:migrate` / `npm run seed`: local D1 tables / load `data/` into local D1 (`-- --remote` only with Ricardo's OK)
+- `npm run db:migrate` / `npm run seed`: local D1 tables / load `data/` into local D1 without overwriting app edits (`-- --plan` replaces only the plan, `-- --force` replaces everything, `-- --remote` only with Ricardo's OK)
 - `node scripts/secrets.ts`: SETUP_TOKEN, INGEST_TOKEN and VAPID keys into `.dev.vars` (`--remote`: into `.env` + `wrangler secret put`). Never print the values.
 - `npm test`, `npm run typecheck`, `npm run lint`: run all three before calling work done
 - `npm run plan`: cash-flow plan from `data/plan.local.json` (`scripts/plan.example.json` documents the shape)
@@ -32,4 +32,9 @@ Ricardo's personal finance dashboard. Product decisions and status: vault note `
 - Live balances (`computeActuals`): last snapshot per account + every entry after it. Checking and cash snapshots are available balances, so entries count by transaction `date`; the card snapshot is the posted balance, so card entries count by `postedDate`. On the snapshot's own day, an entry counts only when both have a time (`at`) and the entry is later.
 - Alert emails become entries with `source: 'alert'`. Importing a statement or CSV settles them (`settleAlertEntries`): paired rows replace them (keeping the alert's earlier date and time), unpaired ones older than 5 days inside the file's period are dropped.
 - Safe to spend = lowest projected balance minus the floor (the reserve, from its start date), over the horizon: end of next month, or Jan 31 when the date is in November (`defaultHorizonEnd`).
-- Income forecast: hours per day (plan segments, closures, holidays, logged actuals) × net hourly rate, grouped into pay periods with pay-date rules (day of month rolled to a business day, or n-th business day).
+- Plan format is versioned (`PlanConfig.version`, now 2). Older stored plans are migrated on read (`migratePlan`, `worker/state.ts`). Change the shape → bump the version and add a migration with a test.
+- One forecast, no scenarios (`planFlows`, `forwardFlows`):
+  - Hours per job: logged days as they are. After the last logged day, the average of the last full weeks since `hoursSince`, capped at `maxWeeklyHours` (extra hours stay extra). The usual `weeklyHours` until two weeks are logged (`weeklyHoursBasis`).
+  - Hours × net rate are grouped into pay periods with pay-date rules (day of month rolled to a business day, or the n-th business day).
+  - Time away (`away`) and job closures pay nothing. Both can repeat yearly (`occurrences`).
+- Goals fill in list order after the reserve; trips get the room that keeps the reserve until the month after them. The Plan screen always shows the next 12 months (`buildYearPlan`).

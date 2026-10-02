@@ -7,13 +7,13 @@ Personal finance dashboard: what came in, what went out, the month's result, a f
   - safe to spend, and the projected balance until next month ends (paydays, tightest day, reserve)
   - balances today (bank, cash, card, total with the reserve included)
   - money in / out / result, and the expected result by month end
-  - next month: covered or not
-  - spending by category vs budget, income by source, the next 14 days, alerts
+  - next month: covered or not, and the income per job with the hours it counts
+  - budgets that fill as you spend (amber near the limit, red over it), bills paid or due, income by source, the next 14 days, alerts
 - **Plan**:
-  - balance at each month end until the plan end, for a worst case and a likely case: the total, or what is above the reserve
-  - spending room at checkpoints (e.g. trips)
-  - the savings goal under every work option
-  - assumptions to check
+  - one forecast for the next 12 months (it rolls forward, so it never runs out): the total at each month end, or what is above the reserve
+  - savings goals in priority order: what each has now, what it will have on its date, and the extra saving a month that closes any gap
+  - room to spend on each trip without touching the reserve
+  - what the forecast assumes, written from the plan itself, plus your notes
 - **Transactions**:
   - import Chase statement PDFs and Chase / Discover CSV exports
   - add cash
@@ -21,19 +21,29 @@ Personal finance dashboard: what came in, what went out, the month's result, a f
   - entries from bank alert emails carry an "alert" badge
 - **Settings**:
   - balances (typed in, or updated by balance alerts), daily notification, sync status and received alert emails
-  - reserve and goal, budgets, bills, one-off events, rules, passkeys, the full plan as JSON
+  - the plan, edited in place:
+    - reserve and goals
+    - jobs, with usual and maximum hours, the pay rate and breaks
+    - time away (yearly or one-time; trips cut home spending)
+    - budgets with the recent average next to each
+    - bills with skipped months
+    - one-offs (yearly or once) and notes
+  - rules, passkeys, the full plan as JSON
 
 ## How the numbers stay current
 - **Bank alerts**: a Google Apps Script (`apps-script/`) forwards Chase and Discover alert emails to `/api/ingest/email`.
   - Each email becomes a transaction or a balance update.
   - Statements and CSVs imported later replace the alert entries.
-- **Hours**: the same script sends the timesheets to `/api/ingest/hours`; logged hours replace the plan's hours in the paycheck forecast.
+- **Hours**: the same script sends the timesheets to `/api/ingest/hours`.
+  - Logged days count as they are.
+  - From now on, each job counts the average of its last full weeks, never above the job's maximum, so extra hours stay extra.
+  - With fewer than two logged weeks, it counts the usual hours.
 - **Daily push** at 8 am (Cron Trigger): "Balance $X · Available $Y" plus the one thing worth knowing today. The script also emails urgent alerts.
 - Live balance = the last balance typed in (or from a balance alert) + every transaction after it.
 
 ## Status
 - ✅ Engine, importer, Worker API (D1), React app, passkey login, PWA, alert email sync, timesheet sync, web push.
-- ⏳ Deploy: needs a Cloudflare account (see DEPLOY.md), then the Apps Script setup (see apps-script/README.md).
+- ✅ Deployed on the Cloudflare free plan (see DEPLOY.md). Sync setup: apps-script/README.md.
 
 ## Setup
 ```bash
