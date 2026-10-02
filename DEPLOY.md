@@ -2,6 +2,11 @@
 
 Nothing here runs without Ricardo's OK: it puts the app and his financial history online.
 
+**Live since 2026-10-02:** https://finance-dashboard.ricardogross.workers.dev
+- D1 `finance` is in Eastern North America.
+- Hourly cron.
+- Secrets set with `scripts/secrets.ts --remote`.
+
 ## One-time setup
 
 1. **Ricardo** creates a free Cloudflare account (dash.cloudflare.com/sign-up) and confirms the email.
@@ -26,7 +31,9 @@ Nothing here runs without Ricardo's OK: it puts the app and his financial histor
    ```bash
    npm run deploy
    ```
-   The app is served at `https://finance-dashboard.<account-subdomain>.workers.dev`. The hourly Cron Trigger (daily push at 8 am Chicago time) is part of the deploy.
+   - The app is served at `https://finance-dashboard.<account-subdomain>.workers.dev`.
+   - The hourly Cron Trigger (daily push at 8 am Chicago time) is part of the deploy.
+   - A new account first needs a workers.dev subdomain. Opening Workers & Pages in the dashboard creates one, or register it through the API. This account uses `ricardogross`.
 
 ## Check before using it
 

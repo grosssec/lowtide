@@ -16,8 +16,8 @@
 		{
 			"binding": "DB",
 			"database_name": "finance",
-			// Placeholder for local development; replaced by the real id from `wrangler d1 create finance` at deploy time.
-			"database_id": "00000000-0000-4000-8000-000000000000",
+			// Created with `wrangler d1 create finance --location enam` (2026-10-02). Local dev uses its own copy under .wrangler/.
+			"database_id": "8aff7d70-8220-49a1-a6f0-6d74f1a830df",
 			"migrations_dir": "migrations"
 		}
 	],
