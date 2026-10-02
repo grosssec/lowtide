@@ -2,6 +2,10 @@ import { readFileSync } from 'node:fs';
 import { createContext, runInContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 
+/** Script properties and spreadsheets the stand-ins serve. */
+const properties: Record<string, string> = {};
+const spreadsheets: Record<string, { tabs: string[][][] }> = {};
+
 /** Loads apps-script/Code.gs with small stand-ins for the Google services its helpers use. */
 function loadScript() {
   const source = readFileSync(new URL('../../apps-script/Code.gs', import.meta.url), 'utf8');
@@ -14,7 +18,23 @@ function loadScript() {
       throw new Error(`pattern ${pattern}`);
     },
   };
-  const context = createContext({ PropertiesService: { getScriptProperties: () => ({}) }, Utilities, console });
+  const SpreadsheetApp = {
+    openById: (id: string) => ({
+      getSpreadsheetTimeZone: () => 'America/Chicago',
+      getSheets: () =>
+        spreadsheets[id].tabs.map((rows) => ({
+          // Dates arrive as text here; real sheets may hand over Date objects for the same cells.
+          getDataRange: () => ({ getValues: () => rows, getDisplayValues: () => rows }),
+        })),
+      getSheetByName: () => null,
+    }),
+  };
+  const context = createContext({
+    PropertiesService: { getScriptProperties: () => ({ getProperty: (key: string) => properties[key] ?? null }) },
+    SpreadsheetApp,
+    Utilities,
+    console: { log: () => undefined },
+  });
   runInContext(source, context);
   return context as Record<string, (...args: never[]) => unknown>;
 }
@@ -28,6 +48,8 @@ describe('Apps Script helpers', () => {
     expect(gs.isoDate_('' as never, '9/8/2026' as never, 'America/Chicago' as never)).toBe('2026-09-08');
     expect(gs.isoDate_('' as never, '2026-10-01' as never, 'America/Chicago' as never)).toBe('2026-10-01');
     expect(gs.isoDate_('' as never, 'Total' as never, 'America/Chicago' as never)).toBeNull();
+    expect(gs.isoDate_('' as never, 'Oct 1, 2026' as never, 'America/Chicago' as never)).toBe('2026-10-01');
+    expect(gs.isoDate_('' as never, 'September 30 2026' as never, 'America/Chicago' as never)).toBe('2026-09-30');
     expect([gs.duration_('3.5' as never), gs.duration_('3:30' as never), gs.duration_('2,25 h' as never), gs.duration_('' as never)]).toEqual([3.5, 3.5, 2.25, 0]);
     expect(gs.span_('9:00 AM' as never, '1:30 PM' as never)).toBe(4.5);
     expect(gs.span_('12:15 PM' as never, '12:45 PM' as never)).toBe(0.5);
@@ -72,5 +94,50 @@ describe('Apps Script helpers', () => {
     // HTML-only emails lose their tags.
     const htmlOnly = { mimeType: 'text/html', body: { data: web64('<style>p{}</style><p>Balance:&nbsp;<b>$1.00</b></p>') } };
     expect(gs.bodyText_(htmlOnly as never)).toBe('Balance: $1.00');
+  });
+
+  it('finds the columns from header rows and reads every block of every tab', () => {
+    expect(gs.headerColumns_(['', 'Date', 'Day', 'Time In', 'Time Out', 'Total Hours', '', 'Summary Scorecard', ''] as never)).toEqual({
+      date: 1,
+      hours: 5,
+      start: 3,
+      end: 4,
+    });
+    expect(gs.headerColumns_(['', '1st - 15th Pay Period', '', ''] as never)).toBeNull();
+
+    // A timesheet laid out like the agency's: one tab per month, a block per pay period (fake hours).
+    const block = (title: string, rows: string[][]) => [['', title, '', '', '', ''], ['', 'Date', 'Day', 'Time In', 'Time Out', 'Total Hours'], ...rows];
+    spreadsheets.sheet1 = {
+      tabs: [
+        [
+          ...block('1st - 15th Pay Period', [
+            ['', 'Oct 1, 2026', 'Thursday', '10:00:00 PM', '11:55 PM', '1.92'],
+            ['', 'Oct 2, 2026', 'Friday', '8:10 AM', '11:30 AM', ''],
+            ['', 'Oct 5, 2026', 'Monday', '', '', ''],
+          ]),
+          ...block('16th - EOM Pay Period', [['', 'Oct 16, 2026', 'Friday', '', '', '4']]),
+        ],
+        block('1st - 15th Pay Period', [['', 'Sep 30, 2026', 'Wednesday', '', '', '2.5']]),
+      ],
+    };
+    properties.AGENCY_SHEET = 'sheet1';
+    const payload = gs.readHours_({ jobId: 'agency', sheetIdProperty: 'AGENCY_SHEET', filledDaily: true } as never, new Date('2026-10-20T15:00:00Z') as never);
+    expect(payload).toEqual({
+      jobId: 'agency',
+      from: '2026-09-05',
+      to: '2026-10-20',
+      // Oct 2 has no total yet, so its hours come from Time In / Time Out.
+      days: [
+        { date: '2026-09-30', hours: 2.5 },
+        { date: '2026-10-01', hours: 1.92 },
+        { date: '2026-10-02', hours: 3.33 },
+        { date: '2026-10-16', hours: 4 },
+      ],
+      through: '2026-10-19',
+    });
+  });
+
+  it('skips a timesheet that is not set up yet', () => {
+    expect(gs.readHours_({ jobId: 'campus', sheetIdProperty: 'MISSING' } as never)).toBeNull();
   });
 });

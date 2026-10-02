@@ -6,7 +6,8 @@
  *   emailDigest     8 am: emails you the urgent alerts (backup for the push notification)
  *
  * Gmail is read with the read-only Gmail API: this script cannot send, change or delete email.
- * Setup: apps-script/README.md. Secrets live in Project Settings → Script properties (APP_URL, INGEST_TOKEN), never here.
+ * Setup: apps-script/README.md. Secrets and sheet ids live in Project Settings → Script properties
+ * (APP_URL, INGEST_TOKEN, UMM_SHEET_ID, BOOKSTORE_SHEET_ID), never here.
  */
 
 const CONFIG = {
@@ -15,18 +16,18 @@ const CONFIG = {
   /** First run looks this far back; later runs only look at the last few days. */
   firstSyncDays: 30,
   /**
-   * One entry per timesheet (fill in after looking at each sheet, then run previewHours):
-   *   jobId          'umm' or 'bookstore' (the job ids in the plan)
-   *   spreadsheetId  the long id in the sheet's URL: docs.google.com/spreadsheets/d/<id>/edit
-   *   sheet          tab name
-   *   firstRow       first row with data (after the headers)
-   *   dateColumn     column with the work date
-   *   hoursColumn    column with hours worked (3.5 or 3:30)  - or -  startColumn + endColumn (9:00 AM / 13:30)
-   *   nameColumn + name  optional: only rows with this name (a shared company sheet)
+   * One entry per timesheet. Every tab is read, and the columns come from each header row that has
+   * "Date" plus "Total Hours" (or "Time In" + "Time Out"). Run previewHours to check what is read.
+   *   jobId            the job id in the plan ('umm', 'bookstore')
+   *   sheetIdProperty  the Script property holding the id in the sheet's URL: docs.google.com/spreadsheets/d/<id>/edit
+   *   filledDaily      the sheet is kept up to date, so a past day without hours was a day off
+   *                    (leave it out for a sheet filled at the end of the month)
+   * Optional, for unusual sheets: sheet (one tab name), firstRow + dateColumn + hoursColumn (or startColumn + endColumn),
+   * nameColumn + name (only your rows in a shared sheet).
    */
   hours: [
-    // { jobId: 'umm', spreadsheetId: '', sheet: 'Sheet1', firstRow: 2, dateColumn: 'A', hoursColumn: 'D' },
-    // { jobId: 'bookstore', spreadsheetId: '', sheet: 'Sheet1', firstRow: 2, dateColumn: 'A', startColumn: 'B', endColumn: 'C' },
+    { jobId: 'umm', sheetIdProperty: 'UMM_SHEET_ID', filledDaily: true },
+    { jobId: 'bookstore', sheetIdProperty: 'BOOKSTORE_SHEET_ID' },
   ],
   /** Days of hours resent every run, so fixes in the sheet are picked up. */
   hoursDays: 45,
@@ -166,43 +167,83 @@ function decode_(data) {
 function syncHours() {
   CONFIG.hours.forEach((source) => {
     const payload = readHours_(source);
+    if (!payload) return;
     console.log(`${source.jobId}: ${JSON.stringify(call_('post', '/api/ingest/hours', payload))}`);
   });
 }
 
 /** Dry run: shows the days and hours read from each timesheet, without sending them. */
 function previewHours() {
-  if (!CONFIG.hours.length) console.log('No timesheets in CONFIG.hours yet.');
   CONFIG.hours.forEach((source) => {
     const payload = readHours_(source);
+    if (!payload) return;
     const total = payload.days.reduce((sum, d) => sum + d.hours, 0);
-    console.log(`${source.jobId}: ${payload.days.length} days, ${total} hours from ${payload.from} to ${payload.to}`);
+    console.log(`${source.jobId}: ${payload.days.length} days, ${total} hours from ${payload.from} to ${payload.to}${payload.through ? `, complete through ${payload.through}` : ''}`);
     payload.days.slice(-10).forEach((d) => console.log(`  ${d.date}  ${d.hours} h`));
   });
 }
 
-function readHours_(source) {
-  const spreadsheet = SpreadsheetApp.openById(source.spreadsheetId);
-  const sheet = spreadsheet.getSheetByName(source.sheet);
-  if (!sheet) throw new Error(`No tab "${source.sheet}" in the ${source.jobId} timesheet`);
-  const timeZone = spreadsheet.getSpreadsheetTimeZone();
-  const range = sheet.getDataRange();
-  const values = range.getValues();
-  const shown = range.getDisplayValues();
-  const from = Utilities.formatDate(new Date(Date.now() - CONFIG.hoursDays * 86400000), timeZone, 'yyyy-MM-dd');
-  const to = Utilities.formatDate(new Date(), timeZone, 'yyyy-MM-dd');
-  const days = [];
+function sheetId_(source) {
+  return source.spreadsheetId || (source.sheetIdProperty ? PROPS.getProperty(source.sheetIdProperty) : null);
+}
 
-  for (let r = (source.firstRow || 2) - 1; r < values.length; r++) {
-    if (source.nameColumn && String(shown[r][column_(source.nameColumn)] || '').trim().toLowerCase() !== String(source.name).trim().toLowerCase()) continue;
-    const date = isoDate_(values[r][column_(source.dateColumn)], shown[r][column_(source.dateColumn)], timeZone);
-    if (!date || date < from || date > to) continue;
-    const hours = source.hoursColumn
-      ? duration_(shown[r][column_(source.hoursColumn)])
-      : span_(shown[r][column_(source.startColumn)], shown[r][column_(source.endColumn)]);
-    if (hours > 0) days.push({ date, hours: Math.round(hours * 100) / 100 });
+/** The hours of one timesheet over the last CONFIG.hoursDays days, summed per day. Null when the sheet is not set up. */
+function readHours_(source, now = new Date()) {
+  const id = sheetId_(source);
+  if (!id) {
+    console.log(`${source.jobId}: no sheet yet (set ${source.sheetIdProperty} in Script properties)`);
+    return null;
   }
-  return { jobId: source.jobId, from, to, days };
+  const spreadsheet = SpreadsheetApp.openById(id);
+  const timeZone = spreadsheet.getSpreadsheetTimeZone();
+  const day = (offset) => Utilities.formatDate(new Date(now.getTime() + offset * 86400000), timeZone, 'yyyy-MM-dd');
+  const from = day(-CONFIG.hoursDays);
+  const to = day(0);
+  const tabs = source.sheet ? [spreadsheet.getSheetByName(source.sheet)] : spreadsheet.getSheets();
+  if (tabs.some((tab) => !tab)) throw new Error(`No tab "${source.sheet}" in the ${source.jobId} timesheet`);
+
+  const perDay = {};
+  for (const tab of tabs) {
+    const range = tab.getDataRange();
+    const values = range.getValues();
+    const shown = range.getDisplayValues();
+    const fixed = source.dateColumn
+      ? { date: column_(source.dateColumn), hours: source.hoursColumn ? column_(source.hoursColumn) : -1, start: source.startColumn ? column_(source.startColumn) : -1, end: source.endColumn ? column_(source.endColumn) : -1 }
+      : null;
+    let cols = fixed;
+    for (let r = fixed ? (source.firstRow || 2) - 1 : 0; r < values.length; r++) {
+      if (!fixed) {
+        const header = headerColumns_(shown[r]);
+        if (header) {
+          cols = header;
+          continue;
+        }
+      }
+      if (!cols) continue;
+      if (source.nameColumn && String(shown[r][column_(source.nameColumn)] || '').trim().toLowerCase() !== String(source.name).trim().toLowerCase()) continue;
+      const date = isoDate_(values[r][cols.date], shown[r][cols.date], timeZone);
+      if (!date || date < from || date > to) continue;
+      const total = cols.hours >= 0 ? String(shown[r][cols.hours] || '').trim() : '';
+      const hours = total ? duration_(total) : cols.start >= 0 && cols.end >= 0 ? span_(shown[r][cols.start], shown[r][cols.end]) : 0;
+      if (hours > 0) perDay[date] = (perDay[date] || 0) + hours;
+    }
+  }
+  const days = Object.keys(perDay)
+    .sort()
+    .map((date) => ({ date, hours: Math.round(perDay[date] * 100) / 100 }));
+  return { jobId: source.jobId, from, to, days, ...(source.filledDaily ? { through: day(-1) } : {}) };
+}
+
+/** Column positions from a header row ("Date", "Total Hours", "Time In", "Time Out"), or null when the row is not one. */
+function headerColumns_(row) {
+  const cells = row.map((cell) => String(cell).trim().toLowerCase());
+  const find = (pattern) => cells.findIndex((cell) => pattern.test(cell));
+  const date = find(/^(date|work date|day worked|data)$/);
+  const hours = find(/^(total hours|hours|hours worked|total|horas)$/);
+  const start = find(/^(time in|clock in|in|start|start time|entrada)$/);
+  const end = find(/^(time out|clock out|out|end|end time|sa[ií]da)$/);
+  if (date < 0 || (hours < 0 && (start < 0 || end < 0))) return null;
+  return { date, hours, start, end };
 }
 
 /** "A" → 0, "D" → 3, "AA" → 26. */
@@ -213,6 +254,8 @@ function column_(letters) {
     .reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) - 1;
 }
 
+const MONTH_NAMES_ = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
 function isoDate_(value, text, timeZone) {
   if (value instanceof Date && !isNaN(value.getTime())) return Utilities.formatDate(value, timeZone, 'yyyy-MM-dd');
   const pad = (n) => String(n).padStart(2, '0');
@@ -221,6 +264,9 @@ function isoDate_(value, text, timeZone) {
   if (m) return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;
   m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(t);
   if (m) return `${m[3].length === 2 ? `20${m[3]}` : m[3]}-${pad(m[1])}-${pad(m[2])}`;
+  // "Oct 1, 2026", "October 1 2026"
+  m = /^([A-Za-z]{3,9})\.? (\d{1,2}),? (\d{4})$/.exec(t);
+  if (m && MONTH_NAMES_.includes(m[1].slice(0, 3).toLowerCase())) return `${m[3]}-${pad(MONTH_NAMES_.indexOf(m[1].slice(0, 3).toLowerCase()) + 1)}-${pad(m[2])}`;
   return null;
 }
 

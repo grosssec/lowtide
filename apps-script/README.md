@@ -10,12 +10,16 @@ The script can't send, change or delete email (its Gmail access is read-only). I
 
 ## 1. Turn on the bank alerts (by email, to your work email)
 
-Chase (chase.com or the app → Profile → Alerts → Account alerts), checking account:
+The script only reads the work inbox. Both banks must send the alerts there, not to iCloud or the university email:
+- Forwarding often fails. The university's Microsoft 365 usually blocks automatic forwarding to outside addresses, and a forwarded email can fail the check that it really came from the bank.
+- A university address stops working after you leave.
+
+Chase (chase.com → Profile & settings → Contact info / Alerts), checking account. Set the alert email to the work address, then turn on:
 - Debit card transactions: any amount (the lowest it allows)
 - Zelle payments sent and received; direct deposits; ATM withdrawals and outgoing transfers
 - A daily balance summary, if offered
 
-Discover (discover.com or the app → Manage → Alerts):
+Discover (discover.com → Profile → Email address, then Manage → Alerts). Change the email on file to the work address, then turn on:
 - Transaction alert: the lowest amount it allows
 - Payment posted
 - Balance alert (daily or current balance), if offered
@@ -34,18 +38,19 @@ Use email, not only push or text: the script only sees email.
 4. **Project Settings → Script properties → Add script property**:
    - `APP_URL` = the app address, e.g. `https://finance-dashboard.<your-subdomain>.workers.dev`
    - `INGEST_TOKEN` = the value in the project's `.env` file (created by `node scripts/secrets.ts --remote`). Copy it from the file; never send it in a chat or email.
+   - `UMM_SHEET_ID` and `BOOKSTORE_SHEET_ID`: the long id in each timesheet's URL (`docs.google.com/spreadsheets/d/<id>/edit`). Leave one out until you have it: that sheet is just skipped.
 
 ## 3. Timesheets
 
-In `Code.gs`, fill in `CONFIG.hours`, one entry per sheet:
-- spreadsheet id (from the sheet's URL)
-- tab name
-- first data row
-- the date column
-- either the hours column or the start + end columns
-- for a shared company sheet: `nameColumn` + `name`, so only your rows count
+Nothing to map by hand:
+- The script reads every tab, so a new tab each month is fine.
+- It finds the columns from each header row that has **Date** and **Total Hours**, or **Time In** and **Time Out**.
+- A day with times but no total yet counts the time between them.
+- `CONFIG.hours` in `Code.gs` lists the two sheets:
+  - **UMM** is filled day by day (`filledDaily`). A past day without hours counts as a day off, and the forecast uses real hours up to yesterday.
+  - **Bookstore** is filled at the end of the month. Until then, the forecast keeps the usual 15 h a week.
 
-Then select **previewHours** and press **Run**. The log shows the days and hours it read; check them against the sheet.
+Select **previewHours** and press **Run**. The log shows the days and hours read from each sheet; check them against the sheets.
 
 ## 4. Authorize and start
 
