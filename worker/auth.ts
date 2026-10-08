@@ -13,7 +13,8 @@ import { z } from 'zod';
 
 export type AppEnv = { Bindings: Env };
 
-const SESSION_COOKIE = 'fd_session';
+/** On https the cookie gets the __Host- prefix: Secure, path /, no Domain, so no subdomain can set or read it. */
+const sessionCookie = (c: Context<AppEnv>) => (new URL(c.req.url).protocol === 'https:' ? '__Host-fd_session' : 'fd_session');
 const SESSION_DAYS = 30;
 const CHALLENGE_MINUTES = 5;
 // Single-user app: one fixed WebAuthn user handle.
@@ -46,7 +47,7 @@ export function sameSecret(a: string, b: string): boolean {
 
 export async function hasSession(c: Context<AppEnv>): Promise<boolean> {
   if (c.env.DEV_AUTH_BYPASS === '1' && isLocalhost(c)) return true;
-  const token = getCookie(c, SESSION_COOKIE);
+  const token = getCookie(c, sessionCookie(c));
   if (!token) return false;
   const row = await c.env.DB.prepare("SELECT id FROM sessions WHERE id = ? AND expires_at > datetime('now')")
     .bind(await sha256(token))
@@ -60,7 +61,7 @@ async function startSession(c: Context<AppEnv>): Promise<void> {
     .bind(await sha256(token))
     .run();
   await c.env.DB.prepare("DELETE FROM sessions WHERE expires_at <= datetime('now')").run();
-  setCookie(c, SESSION_COOKIE, token, {
+  setCookie(c, sessionCookie(c), token, {
     httpOnly: true,
     secure: new URL(c.req.url).protocol === 'https:',
     sameSite: 'Strict',
@@ -69,22 +70,37 @@ async function startSession(c: Context<AppEnv>): Promise<void> {
   });
 }
 
-async function saveChallenge(c: Context<AppEnv>, challenge: string): Promise<string> {
-  const id = randomToken();
-  await c.env.DB.prepare(`INSERT INTO challenges (id, challenge, expires_at) VALUES (?, ?, datetime('now', '+${CHALLENGE_MINUTES} minutes'))`)
-    .bind(id, challenge)
-    .run();
-  await c.env.DB.prepare("DELETE FROM challenges WHERE expires_at <= datetime('now')").run();
-  return id;
+/**
+ * Challenges are signed, not stored: asking for one writes nothing, so nobody without a passkey can make the app write.
+ * id = challenge.expires.hmac(challenge.expires) with CHALLENGE_KEY. Single use is recorded only after a passkey verified.
+ */
+async function challengeMac(c: Context<AppEnv>, payload: string): Promise<string> {
+  if (!c.env.CHALLENGE_KEY) throw new Error('CHALLENGE_KEY is not set');
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(c.env.CHALLENGE_KEY), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return isoBase64URL.fromBuffer(new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload))));
 }
 
-/** Challenges are single use: read and delete in one go. */
+async function saveChallenge(c: Context<AppEnv>, challenge: string): Promise<string> {
+  const payload = `${challenge}.${Date.now() + CHALLENGE_MINUTES * 60_000}`;
+  return `${payload}.${await challengeMac(c, payload)}`;
+}
+
+/** The challenge inside a valid, unexpired, unused id; null otherwise. */
 async function takeChallenge(c: Context<AppEnv>, id: string): Promise<string | null> {
-  const row = await c.env.DB.prepare("SELECT challenge FROM challenges WHERE id = ? AND expires_at > datetime('now')")
-    .bind(id)
-    .first<{ challenge: string }>();
-  await c.env.DB.prepare('DELETE FROM challenges WHERE id = ?').bind(id).run();
-  return row?.challenge ?? null;
+  const [challenge, expires, mac] = id.split('.');
+  if (!challenge || !expires || !mac || Number(expires) < Date.now()) return null;
+  if (!sameSecret(mac, await challengeMac(c, `${challenge}.${expires}`))) return null;
+  const used = await c.env.DB.prepare('SELECT 1 FROM challenges WHERE id = ?').bind(mac).first();
+  return used ? null : challenge;
+}
+
+/** After a passkey verified: the same challenge can never sign anyone in again. */
+async function spendChallenge(c: Context<AppEnv>, id: string): Promise<void> {
+  const mac = id.split('.')[2];
+  await c.env.DB.batch([
+    c.env.DB.prepare(`INSERT OR IGNORE INTO challenges (id, challenge, expires_at) VALUES (?, 'used', datetime('now', '+${CHALLENGE_MINUTES} minutes'))`).bind(mac),
+    c.env.DB.prepare("DELETE FROM challenges WHERE expires_at <= datetime('now')"),
+  ]);
 }
 
 interface CredentialRow {
@@ -152,6 +168,7 @@ export const auth = new Hono<AppEnv>()
       requireUserVerification: true,
     });
     if (!verification.verified || !verification.registrationInfo) return c.json({ error: 'Passkey not verified' }, 400);
+    await spendChallenge(c, body.challengeId);
     const { credential } = verification.registrationInfo;
     await c.env.DB.prepare('INSERT INTO credentials (id, public_key, counter, transports, label) VALUES (?, ?, ?, ?, ?)')
       .bind(credential.id, isoBase64URL.fromBuffer(credential.publicKey), credential.counter, JSON.stringify(credential.transports ?? []), body.label ?? null)
@@ -189,6 +206,7 @@ export const auth = new Hono<AppEnv>()
       },
     });
     if (!verification.verified) return c.json({ error: 'Passkey not verified' }, 400);
+    await spendChallenge(c, body.challengeId);
     await c.env.DB.prepare('UPDATE credentials SET counter = ? WHERE id = ?')
       .bind(verification.authenticationInfo.newCounter, stored.id)
       .run();
@@ -196,8 +214,8 @@ export const auth = new Hono<AppEnv>()
     return c.json({ ok: true });
   })
   .post('/logout', async (c) => {
-    const token = getCookie(c, SESSION_COOKIE);
+    const token = getCookie(c, sessionCookie(c));
     if (token) await c.env.DB.prepare('DELETE FROM sessions WHERE id = ?').bind(await sha256(token)).run();
-    deleteCookie(c, SESSION_COOKIE, { path: '/' });
+    deleteCookie(c, sessionCookie(c), { path: '/', secure: new URL(c.req.url).protocol === 'https:' });
     return c.json({ ok: true });
   });

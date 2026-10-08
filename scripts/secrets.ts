@@ -2,6 +2,7 @@
  * Generates the Worker secrets (none of them is a bank password):
  *   SETUP_TOKEN        one-time code to register the first passkey
  *   INGEST_TOKEN       what the Google Apps Script sends with bank alerts and hours
+ *   CHALLENGE_KEY      signs the sign-in challenges, so asking for one writes nothing
  *   VAPID_PUBLIC_KEY / VAPID_PRIVATE_JWK   key pair that signs the push notifications
  *
  * Run: node scripts/secrets.ts            → adds the missing ones to .dev.vars (local Worker)
@@ -29,6 +30,7 @@ const ensure = (name: string, make: () => string) => {
 
 ensure('SETUP_TOKEN', () => random(18));
 ensure('INGEST_TOKEN', () => random(32));
+ensure('CHALLENGE_KEY', () => random(32));
 if (!values.get('VAPID_PUBLIC_KEY') || !values.get('VAPID_PRIVATE_JWK')) {
   const keys = await generateVapidKeys();
   for (const name of ['VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_JWK']) {
@@ -45,7 +47,10 @@ chmodSync(file, 0o600);
 console.log(added.length ? `${remote ? '.env' : '.dev.vars'}: added ${added.join(', ')}` : `${remote ? '.env' : '.dev.vars'}: nothing to add`);
 
 if (remote) {
-  for (const name of ['SETUP_TOKEN', 'INGEST_TOKEN', 'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_JWK']) {
+  // --only NAME stores just that one (e.g. a new secret), leaving the others on Cloudflare as they are.
+  const only = process.argv[process.argv.indexOf('--only') + 1];
+  const names = process.argv.includes('--only') ? [only] : ['SETUP_TOKEN', 'INGEST_TOKEN', 'CHALLENGE_KEY', 'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_JWK'];
+  for (const name of names) {
     // The value goes through stdin, so it never shows up in the shell history or the process list.
     execFileSync('npx', ['wrangler', 'secret', 'put', name], { input: values.get(name), stdio: ['pipe', 'inherit', 'inherit'] });
   }

@@ -18,6 +18,19 @@ app.use('/api/*', async (c, next) => {
 // The sync script authenticates with its own bearer token (worker/ingest.ts), never with the session cookie.
 const isIngest = (path: string) => path.startsWith('/api/ingest/');
 
+// Rate limits per client IP: sign-in is the tightest (each attempt writes a challenge), then the sync, then the rest.
+app.use('/api/*', async (c, next) => {
+  const path = c.req.path;
+  const limiter = path.startsWith('/api/auth/') ? c.env.AUTH_LIMIT : isIngest(path) ? c.env.INGEST_LIMIT : c.env.API_LIMIT;
+  const ip = c.req.header('CF-Connecting-IP') ?? 'local';
+  const { success } = await limiter.limit({ key: ip });
+  if (!success) {
+    console.warn('rate limited', path, ip);
+    return c.json({ error: 'Too many requests, try again in a minute' }, 429);
+  }
+  return next();
+});
+
 // Everything except the login endpoints and the sync script needs a session.
 app.use('/api/*', async (c, next) => {
   if (c.req.path.startsWith('/api/auth/') || isIngest(c.req.path)) return next();
@@ -43,8 +56,10 @@ app.onError((error, c) => {
     return c.json({ error: 'Invalid request', issues: error.issues.map((i) => `${i.path.join('.')}: ${i.message}`) }, 400);
   }
   if (error instanceof HTTPException) return c.json({ error: error.message }, error.status);
+  if (error instanceof SyntaxError) return c.json({ error: 'Invalid JSON' }, 400);
+  // Details stay in the Worker logs; the client never sees internals.
   console.error(error);
-  return c.json({ error: error.message }, 500);
+  return c.json({ error: 'Something went wrong' }, 500);
 });
 
 export default {
