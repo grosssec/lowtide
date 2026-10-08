@@ -31,9 +31,10 @@ export type ParsedAlert =
   | { status: 'ignored'; note: string }
   | { status: 'unparsed'; note: string };
 
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 const MONEY = /\$\s?([\d,]+\.\d{2})/;
 const IGNORE =
-  /statement (is )?(ready|available)|payment (is )?due|due (date|soon)|minimum payment|reminder|scheduled|will be (paid|charged|debited)|autopay|upcoming|security|sign[- ]?in|log[- ]?in|password|verification|one-time code|new device|profile|offer|reward|cashback bonus|earn |promo|survey|paperless|update your|card (is )?on the way|activate/i;
+  /statement (is )?(ready|available)|payment (is )?due|due (date|soon)|minimum payment|reminder|scheduled|e-?mail address|address change|alert preferences|preferences have changed|will be (paid|charged|debited)|autopay|upcoming|security|sign[- ]?in|log[- ]?in|password|verification|one-time code|new device|profile|offer|reward|cashback bonus|earn |promo|survey|paperless|update your|card (is )?on the way|activate/i;
 const TRANSACTION =
   /transaction|purchase|charged?|spent|debit card|card (was )?used|withdrawal|atm|zelle|direct deposit|deposit|refund|credit(ed)?|payment (was |has been )?(received|posted|sent|made)|received your payment|you (sent|received|made)|transfer/i;
 const MONEY_IN =
@@ -96,6 +97,15 @@ export function parseBankAlert(email: AlertEmail, timeZone = 'America/Chicago'):
   const body = clean(email.body);
   const date = localDate(email.date, timeZone);
   if (IGNORE.test(subject)) return { status: 'ignored', note: 'Reminder, statement, security or marketing' };
+
+  // Daily summary: the balance at the end of the day it covers (its totals are not single transactions).
+  const endOfDay = /end of day balance\s*\$\s?([\d,]+\.\d{2})/i.exec(body);
+  if (endOfDay) {
+    const covered = /summary for \w+, (\w{3})\w* (\d{1,2}), (\d{4})/i.exec(body);
+    const month = covered ? MONTHS.indexOf(covered[1].toLowerCase()) + 1 : 0;
+    const day = month > 0 ? `${covered![3]}-${String(month).padStart(2, '0')}-${covered![2].padStart(2, '0')}` : date;
+    return { status: 'balance', account, date: day, amount: parseMoney(endOfDay[1]) };
+  }
 
   const both = `${subject} ${body}`;
   const isTransaction = TRANSACTION.test(both);

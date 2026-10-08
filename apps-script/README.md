@@ -3,7 +3,7 @@
 Runs inside Google, on your work email account (Google Workspace), twice a day (around 7 am and 7 pm; change `CONFIG.syncHours` for other times):
 
 - **Bank alerts**: reads Chase and Discover alert emails (read-only Gmail access) and sends them to the app. Each one becomes a transaction or a balance update.
-- **Hours**: reads the UMM and Bookstore timesheets (read-only) and sends the hours, so the paycheck forecast uses real hours instead of the plan.
+- **Hours**: reads the UMM and Bookstore timesheets and sends the hours, so the paycheck forecast uses real hours instead of the plan. (Google only lets a script open a sheet with the full Sheets permission; the code only reads.)
 - **Email digest**: at 8 am, emails you if something is urgent or needs a look (backup for the push notification).
 
 The script can't send, change or delete email (its Gmail access is read-only). Its email digest uses a separate send permission, and it only ever writes to you.
@@ -19,10 +19,7 @@ Chase (chase.com → Profile & settings → Contact info / Alerts), checking acc
 - Zelle payments sent and received; direct deposits; ATM withdrawals and outgoing transfers
 - A daily balance summary, if offered
 
-Discover (discover.com → Profile → Email address, then Manage → Alerts). Change the email on file to the work address, then turn on:
-- Transaction alert: the lowest amount it allows
-- Payment posted
-- Balance alert (daily or current balance), if offered
+Discover only sends alerts by push or text, not by email, so the card comes in through a CSV import (Discover website → Activity → Download, CSV) once a week.
 
 Use email, not only push or text: the script only sees email.
 

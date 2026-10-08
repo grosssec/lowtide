@@ -7,6 +7,22 @@ const CHASE = 'Chase <no.reply.alerts@chase.com>';
 const DISCOVER = 'Discover Card <discover@services.discover.com>';
 
 describe('parseBankAlert', () => {
+  it('reads the daily summary as the end-of-day balance of the day it covers', () => {
+    const summary = email(
+      CHASE,
+      'Your daily summary for account ending in (...0000)',
+      'Daily summary Account summary for Friday, Oct 2, 2026 Account ending in (...0000) End of Day Balance $98.99 Total Withdrawals $0.00 Total Deposits $0.00 To see more details, please review your account.',
+      '2026-10-03T09:27:48Z',
+    );
+    expect(parseBankAlert(summary)).toEqual({ status: 'balance', account: 'chase', date: '2026-10-02', amount: 9_899 });
+  });
+
+  it('ignores email and alert setting changes', () => {
+    expect(parseBankAlert(email(CHASE, 'Your Online E-mail Address Change')).status).toBe('ignored');
+    expect(parseBankAlert(email(DISCOVER, 'Information Regarding Email Address Change')).status).toBe('ignored');
+    expect(parseBankAlert(email(CHASE, 'Your account alert preferences have changed')).status).toBe('ignored');
+  });
+
   it('reads a debit card purchase in the local date (UTC evening is still the same day in Lakeside)', () => {
     expect(parseBankAlert(email(CHASE, 'Your $3.60 debit card transaction with COCA COLA ROUND ROCK LA'))).toEqual({
       status: 'transaction',
