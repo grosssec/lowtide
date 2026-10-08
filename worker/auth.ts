@@ -45,20 +45,52 @@ export function sameSecret(a: string, b: string): boolean {
   return diff === 0;
 }
 
-export async function hasSession(c: Context<AppEnv>): Promise<boolean> {
-  if (c.env.DEV_AUTH_BYPASS === '1' && isLocalhost(c)) return true;
+/** "iPhone · Safari", "Mac · Chrome": enough to recognize a device, nothing more. */
+export function deviceOf(c: Context<AppEnv>): string {
+  const ua = c.req.header('User-Agent') ?? '';
+  const os = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Mac OS X|Macintosh/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : 'Unknown device';
+  const browser = /Edg\//.test(ua) ? 'Edge' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : /Mobile\//.test(ua) ? 'Home Screen app' : '';
+  return browser ? `${os} · ${browser}` : os;
+}
+
+/** City and country from Cloudflare's request data (no IP is stored). */
+function placeOf(c: Context<AppEnv>): string | null {
+  const cf = (c.req.raw as Request & { cf?: { city?: string; country?: string } }).cf;
+  return [cf?.city, cf?.country].filter(Boolean).join(', ') || null;
+}
+
+/** Only called after a passkey verified or with a valid session, so it can't be used to flood the database. */
+export async function logEvent(c: Context<AppEnv>, type: string, detail?: string): Promise<void> {
+  await c.env.DB.prepare('INSERT INTO security_events (type, device, place, detail) VALUES (?, ?, ?, ?)')
+    .bind(type, deviceOf(c), placeOf(c), detail ?? null)
+    .run();
+}
+
+/** The current session's id (the hash of its token), or null. */
+export async function sessionId(c: Context<AppEnv>): Promise<string | null> {
+  if (c.env.DEV_AUTH_BYPASS === '1' && isLocalhost(c)) return 'dev';
   const token = getCookie(c, sessionCookie(c));
-  if (!token) return false;
-  const row = await c.env.DB.prepare("SELECT id FROM sessions WHERE id = ? AND expires_at > datetime('now')")
-    .bind(await sha256(token))
-    .first();
-  return Boolean(row);
+  if (!token) return null;
+  const id = await sha256(token);
+  const row = await c.env.DB.prepare("SELECT id FROM sessions WHERE id = ? AND expires_at > datetime('now')").bind(id).first();
+  if (!row) return null;
+  // "Last seen" moves at most once an hour, so normal use costs almost no writes.
+  await c.env.DB.prepare("UPDATE sessions SET last_seen_at = datetime('now') WHERE id = ? AND (last_seen_at IS NULL OR last_seen_at < datetime('now', '-1 hour'))")
+    .bind(id)
+    .run();
+  return id;
+}
+
+export async function hasSession(c: Context<AppEnv>): Promise<boolean> {
+  return (await sessionId(c)) !== null;
 }
 
 async function startSession(c: Context<AppEnv>): Promise<void> {
   const token = randomToken();
-  await c.env.DB.prepare(`INSERT INTO sessions (id, expires_at) VALUES (?, datetime('now', '+${SESSION_DAYS} days'))`)
-    .bind(await sha256(token))
+  await c.env.DB.prepare(
+    `INSERT INTO sessions (id, expires_at, device, place, last_seen_at) VALUES (?, datetime('now', '+${SESSION_DAYS} days'), ?, ?, datetime('now'))`,
+  )
+    .bind(await sha256(token), deviceOf(c), placeOf(c))
     .run();
   await c.env.DB.prepare("DELETE FROM sessions WHERE expires_at <= datetime('now')").run();
   setCookie(c, sessionCookie(c), token, {
@@ -166,14 +198,19 @@ export const auth = new Hono<AppEnv>()
       expectedOrigin: origin,
       expectedRPID: rpID,
       requireUserVerification: true,
+    }).catch((error: Error) => {
+      console.warn('passkey registration rejected', error.message);
+      return null;
     });
-    if (!verification.verified || !verification.registrationInfo) return c.json({ error: 'Passkey not verified' }, 400);
+    if (!verification?.verified || !verification.registrationInfo) return c.json({ error: 'Passkey not verified' }, 400);
     await spendChallenge(c, body.challengeId);
     const { credential } = verification.registrationInfo;
     await c.env.DB.prepare('INSERT INTO credentials (id, public_key, counter, transports, label) VALUES (?, ?, ?, ?, ?)')
-      .bind(credential.id, isoBase64URL.fromBuffer(credential.publicKey), credential.counter, JSON.stringify(credential.transports ?? []), body.label ?? null)
+      .bind(credential.id, isoBase64URL.fromBuffer(credential.publicKey), credential.counter, JSON.stringify(credential.transports ?? []), body.label ?? deviceOf(c))
       .run();
+    await logEvent(c, 'passkey_added', body.label ?? deviceOf(c));
     await startSession(c);
+    await logEvent(c, 'sign_in');
     return c.json({ ok: true });
   })
   .post('/login/options', async (c) => {
@@ -204,18 +241,27 @@ export const auth = new Hono<AppEnv>()
         counter: stored.counter,
         transports: stored.transports ? JSON.parse(stored.transports) : undefined,
       },
+    }).catch((error: Error) => {
+      // Failed attempts go to the Worker logs only: writing them would let anyone fill the database.
+      console.warn('sign-in rejected', error.message);
+      return null;
     });
-    if (!verification.verified) return c.json({ error: 'Passkey not verified' }, 400);
+    if (!verification?.verified) return c.json({ error: 'Passkey not verified' }, 400);
     await spendChallenge(c, body.challengeId);
-    await c.env.DB.prepare('UPDATE credentials SET counter = ? WHERE id = ?')
+    await c.env.DB.prepare("UPDATE credentials SET counter = ?, last_used_at = datetime('now') WHERE id = ?")
       .bind(verification.authenticationInfo.newCounter, stored.id)
       .run();
     await startSession(c);
+    await logEvent(c, 'sign_in');
     return c.json({ ok: true });
   })
   .post('/logout', async (c) => {
     const token = getCookie(c, sessionCookie(c));
-    if (token) await c.env.DB.prepare('DELETE FROM sessions WHERE id = ?').bind(await sha256(token)).run();
+    if (token) {
+      const id = await sha256(token);
+      const known = await c.env.DB.prepare('DELETE FROM sessions WHERE id = ?').bind(id).run();
+      if (known.meta.changes) await logEvent(c, 'sign_out');
+    }
     deleteCookie(c, sessionCookie(c), { path: '/', secure: new URL(c.req.url).protocol === 'https:' });
     return c.json({ ok: true });
   });

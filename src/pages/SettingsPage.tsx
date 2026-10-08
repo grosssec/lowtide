@@ -2,8 +2,9 @@ import { Card, ErrorNote, Loading } from '../components/ui.tsx';
 import { useApi } from '../lib/useApi.ts';
 import { BalancesCard, NotificationsCard, SyncCard } from './settings/account.tsx';
 import type { SettingsData } from './settings/fields.tsx';
-import { AdvancedCard, RulesCard, SecurityCard } from './settings/misc.tsx';
+import { AdvancedCard, RulesCard } from './settings/misc.tsx';
 import { PlanEditor } from './settings/plan-editor.tsx';
+import { SecurityCard } from './settings/security.tsx';
 
 export function SettingsPage() {
   const { data, error, reload } = useApi<SettingsData>('/settings');

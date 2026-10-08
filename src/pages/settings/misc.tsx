@@ -1,4 +1,3 @@
-import { startRegistration } from '@simplewebauthn/browser';
 import { useState } from 'react';
 import type { PlanConfig } from '../../../shared/plan/config.ts';
 import { Button, Card, ErrorNote } from '../../components/ui.tsx';
@@ -44,42 +43,6 @@ export function RulesCard({ rules, onChanged }: { rules: SettingsData['rules']; 
         </ul>
       )}
       <ErrorNote message={error} />
-    </Card>
-  );
-}
-
-export function SecurityCard() {
-  const [state, setState] = useState('idle');
-  async function addPasskey() {
-    setState('saving');
-    try {
-      const { options, challengeId } = await api<{ options: Parameters<typeof startRegistration>[0]['optionsJSON']; challengeId: string }>('/auth/register/options', {
-        method: 'POST',
-        json: {},
-      });
-      const response = await startRegistration({ optionsJSON: options });
-      await api('/auth/register/verify', { method: 'POST', json: { challengeId, response, label: navigator.platform } });
-      setState('saved');
-    } catch (e) {
-      setState((e as Error).message);
-    }
-  }
-  async function signOut() {
-    await api('/auth/logout', { method: 'POST', json: {} }).catch(() => undefined);
-    window.location.reload();
-  }
-  return (
-    <Card title="Security">
-      <p className="text-sm text-ink-2">Sign-in uses passkeys (Face ID / Touch ID). Add one for each device you use.</p>
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <Button variant="quiet" onClick={addPasskey}>
-          Add this device
-        </Button>
-        <Button variant="danger" onClick={signOut}>
-          Sign out
-        </Button>
-        <Saved state={state} />
-      </div>
     </Card>
   );
 }

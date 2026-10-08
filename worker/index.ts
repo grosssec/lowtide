@@ -6,6 +6,7 @@ import { api } from './api.ts';
 import { auth, hasSession, type AppEnv } from './auth.ts';
 import { ingest } from './ingest.ts';
 import { onSchedule } from './notify.ts';
+import { security } from './security.ts';
 
 const app = new Hono<AppEnv>();
 
@@ -48,6 +49,7 @@ app.use('/api/*', async (c, next) => {
 
 app.route('/api/auth', auth);
 app.route('/api/ingest', ingest);
+app.route('/api/security', security);
 app.route('/api', api);
 
 app.notFound((c) => c.json({ error: 'Not found' }, 404));
