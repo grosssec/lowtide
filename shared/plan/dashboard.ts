@@ -72,7 +72,8 @@ export interface DashboardData {
   } | null;
   /** Lowest checking + cash balance ahead, with card bills paid on their due date. */
   cashLow: { date: ISODate; balance: Cents } | null;
-  upcoming: { date: ISODate; label: string; amount: Cents }[];
+  /** late: a bill already due that is not in the books yet (counted once, tomorrow). */
+  upcoming: { date: ISODate; label: string; amount: Cents; late?: boolean }[];
   /** Projected balance from today to the horizon (current month only). */
   runway: DayPoint[];
   paydays: ISODate[];
@@ -85,6 +86,9 @@ const usd = (cents: Cents) => `$${Math.round(Math.abs(cents) / 100).toLocaleStri
 
 /** Bank data older than this many days makes the numbers unreliable. */
 const STALE_DAYS = 5;
+/** The card comes in by a weekly CSV, so it gets a week before the reminder. */
+const CARD_STALE_DAYS = 8;
+const LATE = ' (not seen yet)';
 
 export function buildDashboard(input: { month: string; config: PlanConfig; actuals: Actuals; ledger: LedgerEntry[] }): DashboardData {
   const { month, config, actuals, ledger } = input;
@@ -212,7 +216,7 @@ export function buildDashboard(input: { month: string; config: PlanConfig; actua
 
   const upcoming = flows
     .filter((f) => f.kind !== 'essential' && f.date <= addDays(today, 14))
-    .map((f) => ({ date: f.date, label: f.label, amount: f.amount }));
+    .map((f) => ({ date: f.date, label: f.label, amount: f.amount, ...(f.label.endsWith(LATE) ? { late: true } : {}) }));
 
   if (firstNegative) {
     alerts.push({
@@ -253,6 +257,10 @@ export function buildDashboard(input: { month: string; config: PlanConfig; actua
       level: 'warning',
       text: lastBankData ? `No bank data since ${monthDay(lastBankData)}: import a statement or check the email sync` : 'No bank data yet: import a statement',
     });
+  }
+  const lastCardData = [actuals.dataUntil.discover, actuals.checkedOn.cardOwed].filter(Boolean).sort().at(-1);
+  if (lastCardData && toDayNumber(today) - toDayNumber(lastCardData) > CARD_STALE_DAYS) {
+    alerts.push({ level: 'warning', text: `No card data since ${monthDay(lastCardData)}: import the Discover CSV` });
   }
   if (uncategorized) alerts.push({ level: 'info', text: `${uncategorized} transactions without a category` });
 

@@ -15,7 +15,8 @@ export function dailyMessage(data: DashboardData): { title: string; body: string
 
   const urgent = data.alerts.find((a) => a.level === 'critical');
   const days = (date: string) => toDayNumber(date) - toDayNumber(data.today);
-  const bill = data.upcoming.find((u) => u.amount < 0 && days(u.date) <= 3);
+  // A bill already due but not in the books (often a card charge before the CSV import) is not news every morning.
+  const bill = data.upcoming.find((u) => u.amount < 0 && !u.late && days(u.date) <= 3);
   if (urgent) lines.push(urgent.text);
   else if (bill) {
     const when = days(bill.date) <= 0 ? 'today' : days(bill.date) === 1 ? 'tomorrow' : `on ${monthDay(bill.date)}`;

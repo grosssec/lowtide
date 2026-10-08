@@ -332,3 +332,19 @@ describe('dailyMessage', () => {
     expect(dailyMessage(tight).body).toBe('Checking goes negative on Oct 30 (lowest -$64 on Nov 5). Move a bill or wait for pay. · Essentials only until the Oct 16 paycheck');
   });
 });
+
+describe('reminders that keep the data honest', () => {
+  it('asks for the card CSV once the card data is more than a week old', () => {
+    const fresh = buildDashboard({ month: '2026-10', config, actuals: computeActuals(balances, ledger, '2026-10-18'), ledger });
+    expect(fresh.alerts.map((a) => a.text)).not.toContain('No card data since Oct 10: import the Discover CSV');
+    const old = buildDashboard({ month: '2026-10', config, actuals: computeActuals(balances, ledger, '2026-10-19'), ledger });
+    expect(old.alerts.map((a) => a.text)).toContain('No card data since Oct 10: import the Discover CSV');
+  });
+
+  it('keeps a late bill in the numbers but out of the morning message', () => {
+    // Rent was due Oct 20 and is not in the books on Oct 21: it still counts (tomorrow), but the push does not repeat it.
+    const late = buildDashboard({ month: '2026-10', config, actuals: computeActuals(balances, ledger, '2026-10-21'), ledger });
+    expect(late.upcoming).toContainEqual({ date: '2026-10-22', label: 'Rent (not seen yet)', amount: -30_000, late: true });
+    expect(dailyMessage(late).body).not.toMatch(/Rent/);
+  });
+});

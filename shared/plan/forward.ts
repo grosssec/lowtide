@@ -66,7 +66,7 @@ export function forwardFlows(config: PlanConfig, actuals: Actuals, end: ISODate,
       seen[bill.category] = available - due;
       continue;
     }
-    result.push({ ...bill, date: tomorrow, label: `${bill.label} (not seen yet)` });
+    result.push({ ...bill, date: tomorrow, label: `${bill.label} (not seen yet)` }); // matched by dashboard.ts (LATE)
   }
 
   return { ...forecast, flows: result.sort(byDate) };
