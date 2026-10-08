@@ -6,6 +6,8 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "finance-dashboard",
 	"main": "worker/index.ts",
+	// The app's address. Cloudflare issues and renews its certificate.
+	"routes": [{ "pattern": "finance.ricardogross.com", "custom_domain": true }],
 	"compatibility_date": "2026-09-26",
 	"assets": {
 		"not_found_handling": "single-page-application",

@@ -2,7 +2,7 @@
 
 Nothing here runs without Ricardo's OK: it puts the app and his financial history online.
 
-**Live since 2026-10-02:** https://finance-dashboard.ricardogross.workers.dev
+**Live since 2026-10-02:** https://finance.ricardogross.com (custom domain on the ricardogross.com zone; the workers.dev address is being retired)
 - D1 `finance` is in Eastern North America.
 - Hourly cron.
 - Secrets set with `scripts/secrets.ts --remote`.
