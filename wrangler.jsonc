@@ -8,6 +8,8 @@
 	"main": "worker/index.ts",
 	// The app's address. Cloudflare issues and renews its certificate.
 	"routes": [{ "pattern": "finance.ricardogross.com", "custom_domain": true }],
+	// Only the custom domain: the old finance-dashboard.<subdomain>.workers.dev address is off.
+	"workers_dev": false,
 	"compatibility_date": "2026-09-26",
 	"assets": {
 		"not_found_handling": "single-page-application",
