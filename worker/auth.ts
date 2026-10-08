@@ -36,8 +36,9 @@ async function sha256(value: string): Promise<string> {
   return isoBase64URL.fromBuffer(new Uint8Array(digest));
 }
 
-/** Constant-time comparison for secrets (setup token, ingest token). */
+/** Constant-time comparison for secrets (setup token, ingest token, MACs). An empty secret never matches anything. */
 export function sameSecret(a: string, b: string): boolean {
+  if (!a || !b) return false;
   const x = new TextEncoder().encode(a);
   const y = new TextEncoder().encode(b);
   let diff = x.length ^ y.length;
@@ -112,16 +113,20 @@ async function challengeMac(c: Context<AppEnv>, payload: string): Promise<string
   return isoBase64URL.fromBuffer(new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload))));
 }
 
-async function saveChallenge(c: Context<AppEnv>, challenge: string): Promise<string> {
-  const payload = `${challenge}.${Date.now() + CHALLENGE_MINUTES * 60_000}`;
-  return `${payload}.${await challengeMac(c, payload)}`;
+/** A challenge is signed for one purpose: a sign-in challenge can't be spent on adding a passkey, and back. */
+type Purpose = 'login' | 'register';
+
+async function saveChallenge(c: Context<AppEnv>, challenge: string, purpose: Purpose): Promise<string> {
+  const expires = Date.now() + CHALLENGE_MINUTES * 60_000;
+  return `${challenge}.${expires}.${await challengeMac(c, `${purpose}.${challenge}.${expires}`)}`;
 }
 
-/** The challenge inside a valid, unexpired, unused id; null otherwise. */
-async function takeChallenge(c: Context<AppEnv>, id: string): Promise<string | null> {
-  const [challenge, expires, mac] = id.split('.');
-  if (!challenge || !expires || !mac || Number(expires) < Date.now()) return null;
-  if (!sameSecret(mac, await challengeMac(c, `${challenge}.${expires}`))) return null;
+/** The challenge inside a valid, unexpired, unused id for this purpose; null otherwise. */
+async function takeChallenge(c: Context<AppEnv>, id: string, purpose: Purpose): Promise<string | null> {
+  const [challenge, expires, mac, extra] = id.split('.');
+  const deadline = Number(expires);
+  if (!challenge || !mac || extra !== undefined || !Number.isFinite(deadline) || deadline < Date.now()) return null;
+  if (!sameSecret(mac, await challengeMac(c, `${purpose}.${challenge}.${expires}`))) return null;
   const used = await c.env.DB.prepare('SELECT 1 FROM challenges WHERE id = ?').bind(mac).first();
   return used ? null : challenge;
 }
@@ -184,12 +189,12 @@ export const auth = new Hono<AppEnv>()
       excludeCredentials: (await credentials(c)).map((cred) => ({ id: cred.id })),
       authenticatorSelection: { residentKey: 'required', userVerification: 'required' },
     });
-    return c.json({ options, challengeId: await saveChallenge(c, options.challenge) });
+    return c.json({ options, challengeId: await saveChallenge(c, options.challenge, 'register') });
   })
   .post('/register/verify', async (c) => {
     const body = registerVerifyBody.parse(await c.req.json());
     if (!(await mayRegister(c, body.setupToken))) return c.json({ error: 'Not allowed' }, 403);
-    const challenge = await takeChallenge(c, body.challengeId);
+    const challenge = await takeChallenge(c, body.challengeId, 'register');
     if (!challenge) return c.json({ error: 'Challenge expired, try again' }, 400);
     const { rpID, origin } = relyingParty(c);
     const verification = await verifyRegistrationResponse({
@@ -220,11 +225,11 @@ export const auth = new Hono<AppEnv>()
       userVerification: 'required',
       allowCredentials: (await credentials(c)).map((cred) => ({ id: cred.id })),
     });
-    return c.json({ options, challengeId: await saveChallenge(c, options.challenge) });
+    return c.json({ options, challengeId: await saveChallenge(c, options.challenge, 'login') });
   })
   .post('/login/verify', async (c) => {
     const body = loginVerifyBody.parse(await c.req.json());
-    const challenge = await takeChallenge(c, body.challengeId);
+    const challenge = await takeChallenge(c, body.challengeId, 'login');
     if (!challenge) return c.json({ error: 'Challenge expired, try again' }, 400);
     const stored = (await credentials(c)).find((cred) => cred.id === body.response.id);
     if (!stored) return c.json({ error: 'Unknown passkey' }, 400);

@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
+import { bodyLimit } from 'hono/body-limit';
 import { secureHeaders } from 'hono/secure-headers';
 import { ZodError } from 'zod';
 import { api } from './api.ts';
@@ -15,6 +16,14 @@ app.use('/api/*', async (c, next) => {
   await next();
   c.header('Cache-Control', 'no-store');
 });
+
+// Request bodies: statement imports can be a few MB of rows; nothing else needs more than 1 MB.
+app.use('/api/*', (c, next) =>
+  bodyLimit({ maxSize: c.req.path === '/api/import' ? 6 * 1024 * 1024 : 1024 * 1024, onError: (ctx) => ctx.json({ error: 'Request too large' }, 413) })(
+    c,
+    next,
+  ),
+);
 
 // The sync script authenticates with its own bearer token (worker/ingest.ts), never with the session cookie.
 const isIngest = (path: string) => path.startsWith('/api/ingest/');

@@ -66,6 +66,7 @@ describe('Apps Script helpers', () => {
     expect(gs.dmarcPass_('mx.google.com; dmarc=pass header.from=services.discover.com' as never)).toBe(true);
     expect(gs.dmarcPass_('mx.google.com; dmarc=fail (p=REJECT) header.from=chase.com' as never)).toBe(false);
     expect(gs.dmarcPass_('mx.google.com; dmarc=pass header.from=evilchase.com' as never)).toBe(false);
+    expect(gs.dmarcPass_('mx.google.com; dmarc=pass (p=NONE) header.from=chase.com.evil.net; spf=pass' as never)).toBe(false);
     expect(gs.dmarcPass_('' as never)).toBe(false);
   });
 

@@ -124,8 +124,8 @@ const subscribeBody = z.object({
     .url()
     .max(1_000)
     .refine((url) => {
-      const { protocol, hostname } = new URL(url);
-      return protocol === 'https:' && PUSH_HOSTS.some((host) => hostname === host || hostname.endsWith(`.${host}`));
+      const { protocol, hostname, port, username } = new URL(url);
+      return protocol === 'https:' && !port && !username && PUSH_HOSTS.some((host) => hostname === host || hostname.endsWith(`.${host}`));
     }, 'Not a browser push service'),
   keys: z.object({ p256dh: z.string().min(40).max(200), auth: z.string().min(10).max(100) }),
 });

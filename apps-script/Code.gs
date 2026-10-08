@@ -133,7 +133,8 @@ function toAlert_(message) {
  * and the app then keeps the email out of the numbers.
  */
 function dmarcPass_(results) {
-  return /\bdmarc=pass\b/i.test(results) && /header\.from=(?:[\w-]+\.)*(?:chase|discover)\.com\b/i.test(results);
+  // The domain must end right after .com: "header.from=chase.com.evil.net" is not Chase.
+  return /\bdmarc=pass\b/i.test(results) && /header\.from=(?:[\w-]+\.)*(?:chase|discover)\.com(?=[\s;)]|$)/i.test(results);
 }
 
 /** Plain text of the email: the text/plain part, or the HTML part without tags. */

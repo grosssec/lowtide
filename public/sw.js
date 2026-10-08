@@ -25,7 +25,9 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = new URL(event.notification.data?.url ?? '/', self.location.origin).href;
+  // Only ever open the app itself, whatever the payload says.
+  const target = new URL(event.notification.data?.url ?? '/', self.location.origin);
+  const url = target.origin === self.location.origin ? target.href : self.location.origin;
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
       const open = windows.find((client) => new URL(client.url).origin === self.location.origin);
