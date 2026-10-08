@@ -17,6 +17,13 @@ app.use('/api/*', async (c, next) => {
   c.header('Cache-Control', 'no-store');
 });
 
+// workers.dev can't set a minimum TLS version, so the API refuses TLS 1.0 / 1.1 itself (they have known weaknesses).
+app.use('/api/*', async (c, next) => {
+  const tls = (c.req.raw as Request & { cf?: { tlsVersion?: string } }).cf?.tlsVersion;
+  if (tls && /^TLSv1(\.[01])?$/.test(tls)) return c.json({ error: 'Please update your browser: TLS 1.2 or newer is required' }, 426);
+  return next();
+});
+
 // Request bodies: statement imports can be a few MB of rows; nothing else needs more than 1 MB.
 app.use('/api/*', (c, next) =>
   bodyLimit({ maxSize: c.req.path === '/api/import' ? 6 * 1024 * 1024 : 1024 * 1024, onError: (ctx) => ctx.json({ error: 'Request too large' }, 413) })(
