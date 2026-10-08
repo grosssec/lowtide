@@ -23,6 +23,7 @@ const CONFIG = {
    *   jobId            the job id in the plan ('umm', 'bookstore')
    *   sheetIdProperty  the Script property holding the id in the sheet's URL: docs.google.com/spreadsheets/d/<id>/edit
    *   tabsNamed        only tabs whose name contains this (a sheet shared with other people, one tab per person and month)
+   *   thisMonthOnly    the sheet only holds the current month: earlier months already sent are kept as they are
    *   skipTabsNamed    leave out tabs whose name contains this (e.g. weekly copies for someone else)
    *   filledDaily      the sheet is kept up to date, so a past day without hours was a day off
    *                    (leave it out for a sheet filled at the end of the month)
@@ -31,7 +32,7 @@ const CONFIG = {
    */
   hours: [
     { jobId: 'umm', sheetIdProperty: 'UMM_SHEET_ID', tabsNamed: 'Ricardo', filledDaily: true },
-    { jobId: 'bookstore', sheetIdProperty: 'BOOKSTORE_SHEET_ID', skipTabsNamed: 'Week' },
+    { jobId: 'bookstore', sheetIdProperty: 'BOOKSTORE_SHEET_ID', skipTabsNamed: 'Week', thisMonthOnly: true },
   ],
   /** Days of hours resent every run, so fixes in the sheet are picked up. */
   hoursDays: 45,
@@ -201,7 +202,7 @@ function readHours_(source, now = new Date()) {
   const spreadsheet = SpreadsheetApp.openById(id);
   const timeZone = spreadsheet.getSpreadsheetTimeZone();
   const day = (offset) => Utilities.formatDate(new Date(now.getTime() + offset * 86400000), timeZone, 'yyyy-MM-dd');
-  const from = day(-CONFIG.hoursDays);
+  const from = source.thisMonthOnly ? `${day(0).slice(0, 8)}01` : day(-CONFIG.hoursDays);
   const to = day(0);
   const has = (tab, text) => tab.getName().toLowerCase().includes(String(text).toLowerCase());
   const named = (tab) => (!source.tabsNamed || has(tab, source.tabsNamed)) && (!source.skipTabsNamed || !has(tab, source.skipTabsNamed));

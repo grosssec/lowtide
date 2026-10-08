@@ -153,8 +153,10 @@ describe('Apps Script helpers', () => {
     const tab = (date: string, hours: string) => [['', 'Date', 'Day', 'Time In', 'Time Out', 'Total Hours'], ['', date, '', '', '', hours]];
     spreadsheets.store = { names: ['October', 'Week 1', 'Week 2'], tabs: [tab('out. 1, 2026', '3,00'), tab('Oct 1, 2026', '3'), tab('Oct 1, 2026', '3')] };
     properties.STORE = 'store';
-    const payload = gs.readHours_({ jobId: 'store', sheetIdProperty: 'STORE', skipTabsNamed: 'week' } as never, new Date('2026-10-20T15:00:00Z') as never) as { days: unknown[] };
+    const payload = gs.readHours_({ jobId: 'store', sheetIdProperty: 'STORE', skipTabsNamed: 'week', thisMonthOnly: true } as never, new Date('2026-10-20T15:00:00Z') as never) as { from: string; days: unknown[] };
     expect(payload.days).toEqual([{ date: '2026-10-01', hours: 3 }]);
+    // Only this month is replaced, so earlier months stay as they were sent.
+    expect(payload.from).toBe('2026-10-01');
   });
 
   it('skips a timesheet that is not set up yet', () => {
