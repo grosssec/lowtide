@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 /** Script properties and spreadsheets the stand-ins serve. */
 const properties: Record<string, string> = {};
-const spreadsheets: Record<string, { tabs: string[][][] }> = {};
+const spreadsheets: Record<string, { tabs: string[][][]; names?: string[] }> = {};
 
 /** Loads apps-script/Code.gs with small stand-ins for the Google services its helpers use. */
 function loadScript() {
@@ -22,7 +22,8 @@ function loadScript() {
     openById: (id: string) => ({
       getSpreadsheetTimeZone: () => 'America/Chicago',
       getSheets: () =>
-        spreadsheets[id].tabs.map((rows) => ({
+        spreadsheets[id].tabs.map((rows, i) => ({
+          getName: () => spreadsheets[id].names?.[i] ?? `Tab ${i + 1}`,
           // Dates arrive as text here; real sheets may hand over Date objects for the same cells.
           getDataRange: () => ({ getValues: () => rows, getDisplayValues: () => rows }),
         })),
@@ -135,6 +136,15 @@ describe('Apps Script helpers', () => {
       ],
       through: '2026-10-19',
     });
+  });
+
+  it('reads only the tabs with your name in a sheet shared with others', () => {
+    const tab = (date: string, hours: string) => [['', 'Date', 'Day', 'Time In', 'Time Out', 'Total Hours'], ['', date, '', '', '', hours]];
+    spreadsheets.shared = { names: ['Ricardo - October', 'Sam - October'], tabs: [tab('Oct 1, 2026', '2'), tab('Oct 1, 2026', '8')] };
+    properties.SHARED = 'shared';
+    const payload = gs.readHours_({ jobId: 'agency', sheetIdProperty: 'SHARED', tabsNamed: 'ricardo' } as never, new Date('2026-10-20T15:00:00Z') as never) as { days: unknown[] };
+    expect(payload.days).toEqual([{ date: '2026-10-01', hours: 2 }]);
+    expect(() => gs.readHours_({ jobId: 'agency', sheetIdProperty: 'SHARED', tabsNamed: 'Maria' } as never)).toThrow('No tab with "Maria"');
   });
 
   it('skips a timesheet that is not set up yet', () => {

@@ -22,13 +22,14 @@ const CONFIG = {
    * "Date" plus "Total Hours" (or "Time In" + "Time Out"). Run previewHours to check what is read.
    *   jobId            the job id in the plan ('umm', 'bookstore')
    *   sheetIdProperty  the Script property holding the id in the sheet's URL: docs.google.com/spreadsheets/d/<id>/edit
+   *   tabsNamed        only tabs whose name contains this (a sheet shared with other people, one tab per person and month)
    *   filledDaily      the sheet is kept up to date, so a past day without hours was a day off
    *                    (leave it out for a sheet filled at the end of the month)
    * Optional, for unusual sheets: sheet (one tab name), firstRow + dateColumn + hoursColumn (or startColumn + endColumn),
    * nameColumn + name (only your rows in a shared sheet).
    */
   hours: [
-    { jobId: 'umm', sheetIdProperty: 'UMM_SHEET_ID', filledDaily: true },
+    { jobId: 'umm', sheetIdProperty: 'UMM_SHEET_ID', tabsNamed: 'Ricardo', filledDaily: true },
     { jobId: 'bookstore', sheetIdProperty: 'BOOKSTORE_SHEET_ID' },
   ],
   /** Days of hours resent every run, so fixes in the sheet are picked up. */
@@ -201,8 +202,11 @@ function readHours_(source, now = new Date()) {
   const day = (offset) => Utilities.formatDate(new Date(now.getTime() + offset * 86400000), timeZone, 'yyyy-MM-dd');
   const from = day(-CONFIG.hoursDays);
   const to = day(0);
-  const tabs = source.sheet ? [spreadsheet.getSheetByName(source.sheet)] : spreadsheet.getSheets();
+  const named = (tab) => !source.tabsNamed || tab.getName().toLowerCase().includes(String(source.tabsNamed).toLowerCase());
+  const tabs = source.sheet ? [spreadsheet.getSheetByName(source.sheet)] : spreadsheet.getSheets().filter(named);
   if (tabs.some((tab) => !tab)) throw new Error(`No tab "${source.sheet}" in the ${source.jobId} timesheet`);
+  // A sheet shared with others: never read anyone else's tab.
+  if (source.tabsNamed && !tabs.length) throw new Error(`No tab with "${source.tabsNamed}" in its name in the ${source.jobId} timesheet`);
 
   const perDay = {};
   for (const tab of tabs) {
