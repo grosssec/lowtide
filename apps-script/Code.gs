@@ -23,6 +23,7 @@ const CONFIG = {
    *   jobId            the job id in the plan ('umm', 'bookstore')
    *   sheetIdProperty  the Script property holding the id in the sheet's URL: docs.google.com/spreadsheets/d/<id>/edit
    *   tabsNamed        only tabs whose name contains this (a sheet shared with other people, one tab per person and month)
+   *   skipTabsNamed    leave out tabs whose name contains this (e.g. weekly copies for someone else)
    *   filledDaily      the sheet is kept up to date, so a past day without hours was a day off
    *                    (leave it out for a sheet filled at the end of the month)
    * Optional, for unusual sheets: sheet (one tab name), firstRow + dateColumn + hoursColumn (or startColumn + endColumn),
@@ -30,7 +31,7 @@ const CONFIG = {
    */
   hours: [
     { jobId: 'umm', sheetIdProperty: 'UMM_SHEET_ID', tabsNamed: 'Ricardo', filledDaily: true },
-    { jobId: 'bookstore', sheetIdProperty: 'BOOKSTORE_SHEET_ID' },
+    { jobId: 'bookstore', sheetIdProperty: 'BOOKSTORE_SHEET_ID', skipTabsNamed: 'Week' },
   ],
   /** Days of hours resent every run, so fixes in the sheet are picked up. */
   hoursDays: 45,
@@ -202,7 +203,8 @@ function readHours_(source, now = new Date()) {
   const day = (offset) => Utilities.formatDate(new Date(now.getTime() + offset * 86400000), timeZone, 'yyyy-MM-dd');
   const from = day(-CONFIG.hoursDays);
   const to = day(0);
-  const named = (tab) => !source.tabsNamed || tab.getName().toLowerCase().includes(String(source.tabsNamed).toLowerCase());
+  const has = (tab, text) => tab.getName().toLowerCase().includes(String(text).toLowerCase());
+  const named = (tab) => (!source.tabsNamed || has(tab, source.tabsNamed)) && (!source.skipTabsNamed || !has(tab, source.skipTabsNamed));
   const tabs = source.sheet ? [spreadsheet.getSheetByName(source.sheet)] : spreadsheet.getSheets().filter(named);
   if (tabs.some((tab) => !tab)) throw new Error(`No tab "${source.sheet}" in the ${source.jobId} timesheet`);
   // A sheet shared with others: never read anyone else's tab.
@@ -261,6 +263,8 @@ function column_(letters) {
 }
 
 const MONTH_NAMES_ = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+// Portuguese short names, for sheets formatted in Portuguese ("out. 1, 2026").
+const MONTH_NAMES_PT_ = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
 function isoDate_(value, text, timeZone) {
   if (value instanceof Date && !isNaN(value.getTime())) return Utilities.formatDate(value, timeZone, 'yyyy-MM-dd');
@@ -270,9 +274,13 @@ function isoDate_(value, text, timeZone) {
   if (m) return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;
   m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(t);
   if (m) return `${m[3].length === 2 ? `20${m[3]}` : m[3]}-${pad(m[1])}-${pad(m[2])}`;
-  // "Oct 1, 2026", "October 1 2026"
-  m = /^([A-Za-z]{3,9})\.? (\d{1,2}),? (\d{4})$/.exec(t);
-  if (m && MONTH_NAMES_.includes(m[1].slice(0, 3).toLowerCase())) return `${m[3]}-${pad(MONTH_NAMES_.indexOf(m[1].slice(0, 3).toLowerCase()) + 1)}-${pad(m[2])}`;
+  // "Oct 1, 2026", "October 1 2026", "out. 1, 2026"
+  m = /^([A-Za-zçÇ]{3,9})\.? (\d{1,2}),? (\d{4})$/.exec(t);
+  if (m) {
+    const name = m[1].slice(0, 3).toLowerCase();
+    const index = MONTH_NAMES_.includes(name) ? MONTH_NAMES_.indexOf(name) : MONTH_NAMES_PT_.indexOf(name);
+    if (index >= 0) return `${m[3]}-${pad(index + 1)}-${pad(m[2])}`;
+  }
   return null;
 }
 

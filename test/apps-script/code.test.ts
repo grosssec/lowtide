@@ -51,6 +51,8 @@ describe('Apps Script helpers', () => {
     expect(gs.isoDate_('' as never, 'Total' as never, 'America/Chicago' as never)).toBeNull();
     expect(gs.isoDate_('' as never, 'Oct 1, 2026' as never, 'America/Chicago' as never)).toBe('2026-10-01');
     expect(gs.isoDate_('' as never, 'September 30 2026' as never, 'America/Chicago' as never)).toBe('2026-09-30');
+    expect(gs.isoDate_('' as never, 'out. 1, 2026' as never, 'America/Chicago' as never)).toBe('2026-10-01');
+    expect(gs.isoDate_('' as never, 'fev. 3, 2027' as never, 'America/Chicago' as never)).toBe('2027-02-03');
     expect([gs.duration_('3.5' as never), gs.duration_('3:30' as never), gs.duration_('2,25 h' as never), gs.duration_('' as never)]).toEqual([3.5, 3.5, 2.25, 0]);
     expect(gs.span_('9:00 AM' as never, '1:30 PM' as never)).toBe(4.5);
     expect(gs.span_('12:15 PM' as never, '12:45 PM' as never)).toBe(0.5);
@@ -145,6 +147,14 @@ describe('Apps Script helpers', () => {
     const payload = gs.readHours_({ jobId: 'agency', sheetIdProperty: 'SHARED', tabsNamed: 'ricardo' } as never, new Date('2026-10-20T15:00:00Z') as never) as { days: unknown[] };
     expect(payload.days).toEqual([{ date: '2026-10-01', hours: 2 }]);
     expect(() => gs.readHours_({ jobId: 'agency', sheetIdProperty: 'SHARED', tabsNamed: 'Maria' } as never)).toThrow('No tab with "Maria"');
+  });
+
+  it('leaves out tabs named for someone else, like weekly copies', () => {
+    const tab = (date: string, hours: string) => [['', 'Date', 'Day', 'Time In', 'Time Out', 'Total Hours'], ['', date, '', '', '', hours]];
+    spreadsheets.store = { names: ['October', 'Week 1', 'Week 2'], tabs: [tab('out. 1, 2026', '3,00'), tab('Oct 1, 2026', '3'), tab('Oct 1, 2026', '3')] };
+    properties.STORE = 'store';
+    const payload = gs.readHours_({ jobId: 'store', sheetIdProperty: 'STORE', skipTabsNamed: 'week' } as never, new Date('2026-10-20T15:00:00Z') as never) as { days: unknown[] };
+    expect(payload.days).toEqual([{ date: '2026-10-01', hours: 3 }]);
   });
 
   it('skips a timesheet that is not set up yet', () => {
