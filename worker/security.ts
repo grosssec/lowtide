@@ -1,5 +1,15 @@
 import { Hono } from 'hono';
-import { logEvent, sessionId, type AppEnv } from './auth.ts';
+import { hashCode, logEvent, sessionId, type AppEnv } from './auth.ts';
+
+const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O or 1/I to misread
+const CODE_MINUTES = 10;
+
+/** 8 characters from 32: 40 bits, more than enough for a code that lives 10 minutes and works once. */
+export function newDeviceCode(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  const code = [...bytes].map((b) => CODE_ALPHABET[b % 32]).join('');
+  return `${code.slice(0, 4)}-${code.slice(4)}`;
+}
 
 /** A short, stable handle for a session, so the full hash never leaves the server. */
 const handle = (id: string) => id.slice(0, 12);
@@ -36,6 +46,17 @@ export const security = new Hono<AppEnv>()
       passkeys: passkeys.results.map((p) => ({ id: p.id, label: p.label ?? 'Passkey', added: p.created_at, lastUsed: p.last_used_at })),
       events: events.results,
     });
+  })
+
+  // Shown once on this screen; type it on the new device's sign-in page to create its passkey.
+  .post('/device-code', async (c) => {
+    const code = newDeviceCode();
+    await c.env.DB.batch([
+      c.env.DB.prepare("DELETE FROM device_codes WHERE expires_at <= datetime('now')"),
+      c.env.DB.prepare(`INSERT INTO device_codes (code_hash, expires_at) VALUES (?, datetime('now', '+${CODE_MINUTES} minutes'))`).bind(await hashCode(code)),
+    ]);
+    await logEvent(c, 'device_code_created');
+    return c.json({ code, minutes: CODE_MINUTES });
   })
 
   // Lost phone, shared computer: every other device has to sign in again.

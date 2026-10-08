@@ -36,7 +36,7 @@ async function sha256(value: string): Promise<string> {
   return isoBase64URL.fromBuffer(new Uint8Array(digest));
 }
 
-/** Constant-time comparison for secrets (setup token, ingest token, MACs). An empty secret never matches anything. */
+/** Constant-time comparison for secrets (ingest token, MACs). An empty secret never matches anything. */
 export function sameSecret(a: string, b: string): boolean {
   if (!a || !b) return false;
   const x = new TextEncoder().encode(a);
@@ -152,16 +152,26 @@ async function credentials(c: Context<AppEnv>): Promise<CredentialRow[]> {
   return results;
 }
 
-/** The first passkey needs the one-time SETUP_TOKEN; more passkeys can only be added while signed in. */
-async function mayRegister(c: Context<AppEnv>, setupToken: string | undefined): Promise<boolean> {
-  if ((await credentials(c)).length > 0) return hasSession(c);
-  return Boolean(c.env.SETUP_TOKEN) && Boolean(setupToken) && sameSecret(setupToken!, c.env.SETUP_TOKEN);
+/** "abcd-2345" → "ABCD2345": codes are typed by hand, so case and dashes don't matter. */
+export const normalizeCode = (code: string) => code.toUpperCase().replace(/[^A-Z0-9]/g, '');
+export const hashCode = (code: string) => sha256(normalizeCode(code));
+
+/** A one-time device code that exists and hasn't expired (a read only: guessing writes nothing). */
+async function validCode(c: Context<AppEnv>, code: string | undefined): Promise<boolean> {
+  if (!code || normalizeCode(code).length !== 8) return false;
+  const row = await c.env.DB.prepare("SELECT 1 FROM device_codes WHERE code_hash = ? AND expires_at > datetime('now')").bind(await hashCode(code)).first();
+  return Boolean(row);
 }
 
-const registerOptionsBody = z.object({ setupToken: z.string().optional() });
+/** A passkey can be added while signed in, or on a new device with a one-time code from Settings or `npm run setup-code`. */
+async function mayRegister(c: Context<AppEnv>, deviceCode: string | undefined): Promise<boolean> {
+  return (await hasSession(c)) || (await validCode(c, deviceCode));
+}
+
+const registerOptionsBody = z.object({ deviceCode: z.string().max(20).optional() });
 const registerVerifyBody = z.object({
   challengeId: z.string(),
-  setupToken: z.string().optional(),
+  deviceCode: z.string().max(20).optional(),
   label: z.string().max(60).optional(),
   response: z.custom<RegistrationResponseJSON>((value) => typeof value === 'object' && value !== null),
 });
@@ -177,7 +187,7 @@ export const auth = new Hono<AppEnv>()
   })
   .post('/register/options', async (c) => {
     const body = registerOptionsBody.parse(await c.req.json());
-    if (!(await mayRegister(c, body.setupToken))) return c.json({ error: 'Not allowed' }, 403);
+    if (!(await mayRegister(c, body.deviceCode))) return c.json({ error: 'That code is wrong or expired' }, 403);
     const { rpID } = relyingParty(c);
     const options = await generateRegistrationOptions({
       rpName: c.env.APP_NAME,
@@ -193,7 +203,7 @@ export const auth = new Hono<AppEnv>()
   })
   .post('/register/verify', async (c) => {
     const body = registerVerifyBody.parse(await c.req.json());
-    if (!(await mayRegister(c, body.setupToken))) return c.json({ error: 'Not allowed' }, 403);
+    if (!(await mayRegister(c, body.deviceCode))) return c.json({ error: 'That code is wrong or expired' }, 403);
     const challenge = await takeChallenge(c, body.challengeId, 'register');
     if (!challenge) return c.json({ error: 'Challenge expired, try again' }, 400);
     const { rpID, origin } = relyingParty(c);
@@ -209,6 +219,8 @@ export const auth = new Hono<AppEnv>()
     });
     if (!verification?.verified || !verification.registrationInfo) return c.json({ error: 'Passkey not verified' }, 400);
     await spendChallenge(c, body.challengeId);
+    // A device code works once.
+    if (body.deviceCode) await c.env.DB.prepare('DELETE FROM device_codes WHERE code_hash = ?').bind(await hashCode(body.deviceCode)).run();
     const { credential } = verification.registrationInfo;
     await c.env.DB.prepare('INSERT INTO credentials (id, public_key, counter, transports, label) VALUES (?, ?, ?, ?, ?)')
       .bind(credential.id, isoBase64URL.fromBuffer(credential.publicKey), credential.counter, JSON.stringify(credential.transports ?? []), body.label ?? deviceOf(c))

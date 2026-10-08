@@ -14,7 +14,8 @@ type RegistrationOptions = Parameters<typeof startRegistration>[0]['optionsJSON'
 type AuthenticationOptions = Parameters<typeof startAuthentication>[0]['optionsJSON'];
 
 export function LoginPage({ status, onSignedIn }: { status: AuthStatus; onSignedIn: () => void }) {
-  const [setupToken, setSetupToken] = useState('');
+  const [deviceCode, setDeviceCode] = useState('');
+  const [withCode, setWithCode] = useState(!status.hasPasskey);
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const supported = browserSupportsWebAuthn();
@@ -40,10 +41,10 @@ export function LoginPage({ status, onSignedIn }: { status: AuthStatus; onSigned
     try {
       const { options, challengeId } = await api<{ options: RegistrationOptions; challengeId: string }>('/auth/register/options', {
         method: 'POST',
-        json: { setupToken },
+        json: { deviceCode },
       });
       const response = await startRegistration({ optionsJSON: options });
-      await api('/auth/register/verify', { method: 'POST', json: { challengeId, setupToken, response, label: navigator.platform } });
+      await api('/auth/register/verify', { method: 'POST', json: { challengeId, deviceCode, response } });
       onSignedIn();
     } catch (e) {
       setError((e as Error).message);
@@ -60,26 +61,47 @@ export function LoginPage({ status, onSignedIn }: { status: AuthStatus; onSigned
       </div>
       {!supported ? (
         <p className="mt-6 text-sm text-ink-2">This browser can't use passkeys. Open the app in Safari or Chrome.</p>
-      ) : status.hasPasskey ? (
+      ) : !withCode ? (
         <>
           <h1 className="mt-6 text-2xl font-semibold tracking-tight">Welcome back</h1>
           <p className="mt-1 text-sm text-ink-2">Sign in with Face ID or Touch ID.</p>
           <Button className="mt-6 w-full" onClick={signIn} disabled={busy}>
             {busy ? 'Waiting for Face ID…' : 'Sign in'}
           </Button>
+          <button type="button" className="mt-4 text-sm text-ink-2 underline-offset-2 hover:underline" onClick={() => setWithCode(true)}>
+            New device? Use a code
+          </button>
         </>
       ) : (
         <>
-          <h1 className="mt-6 text-2xl font-semibold tracking-tight">Set up sign-in</h1>
-          <p className="mt-1 text-sm text-ink-2">Enter the setup code once, then confirm with Face ID or Touch ID. After that, only your devices get in.</p>
+          <h1 className="mt-6 text-2xl font-semibold tracking-tight">{status.hasPasskey ? 'Add this device' : 'Set up sign-in'}</h1>
+          <p className="mt-1 text-sm text-ink-2">
+            {status.hasPasskey
+              ? 'On a device that is already signed in, open Settings → Security → Add a device, then type the code here.'
+              : 'Type the code from npm run setup-code, then confirm with Face ID or Touch ID. After that, only your devices get in.'}
+          </p>
           <div className="mt-6">
-            <Field label="Setup code">
-              <input className={inputClass} value={setupToken} onChange={(e) => setSetupToken(e.target.value)} autoComplete="off" autoCapitalize="off" spellCheck={false} />
+            <Field label="Device code">
+              <input
+                className={`${inputClass} num tracking-widest`}
+                value={deviceCode}
+                placeholder="ABCD-2345"
+                onChange={(e) => setDeviceCode(e.target.value.toUpperCase())}
+                autoComplete="one-time-code"
+                autoCapitalize="characters"
+                spellCheck={false}
+                maxLength={9}
+              />
             </Field>
           </div>
-          <Button className="mt-4 w-full" onClick={setUp} disabled={busy || !setupToken}>
+          <Button className="mt-4 w-full" onClick={setUp} disabled={busy || deviceCode.replace(/[^A-Za-z0-9]/g, '').length !== 8}>
             {busy ? 'Waiting for Face ID…' : 'Create passkey'}
           </Button>
+          {status.hasPasskey && (
+            <button type="button" className="mt-4 text-sm text-ink-2 underline-offset-2 hover:underline" onClick={() => setWithCode(false)}>
+              Back to sign in
+            </button>
+          )}
         </>
       )}
       <div className="mt-4">

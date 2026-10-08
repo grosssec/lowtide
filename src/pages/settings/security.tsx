@@ -18,6 +18,7 @@ const EVENT_TEXT: Record<string, string> = {
   passkey_removed: 'Passkey removed',
   session_ended: 'Device signed out remotely',
   others_signed_out: 'Signed out all other devices',
+  device_code_created: 'Code made to add a device',
 };
 
 /** Server times are UTC ("2026-10-08 14:03:00"); show them in the viewer's time. */
@@ -31,6 +32,7 @@ const Row = ({ children }: { children: React.ReactNode }) => <li className="flex
 export function SecurityCard() {
   const { data, error, reload } = useApi<SecurityData>('/security');
   const [state, setState] = useState('idle');
+  const [code, setCode] = useState<{ code: string; minutes: number } | null>(null);
 
   async function run(action: () => Promise<unknown>) {
     setState('saving');
@@ -58,6 +60,10 @@ export function SecurityCard() {
       void run(() => api(`/security/passkeys/${encodeURIComponent(id)}`, { method: 'DELETE' }));
     }
   };
+  const makeCode = () =>
+    run(async () => {
+      setCode(await api<{ code: string; minutes: number }>('/security/device-code', { method: 'POST', json: {} }));
+    });
   async function signOut() {
     await api('/auth/logout', { method: 'POST', json: {} }).catch(() => undefined);
     window.location.reload();
@@ -146,9 +152,19 @@ export function SecurityCard() {
           </section>
         </div>
       )}
+      {code && (
+        <div className="mt-4 rounded-lg border border-line bg-surface-2 p-3 text-sm">
+          <div className="text-ink-2">On the new device, open the app, tap "New device? Use a code" and type:</div>
+          <div className="num mt-1 text-2xl font-semibold tracking-widest text-ink">{code.code}</div>
+          <div className="text-xs text-muted">Works once, for {code.minutes} minutes. Don't send it to anyone.</div>
+        </div>
+      )}
       <div className="mt-4 flex flex-wrap items-center gap-3">
+        <Button variant="quiet" onClick={makeCode}>
+          Add a device
+        </Button>
         <Button variant="quiet" onClick={addPasskey}>
-          Add this device
+          Add a passkey here
         </Button>
         <Button variant="danger" onClick={signOut}>
           Sign out

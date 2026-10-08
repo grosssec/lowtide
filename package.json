@@ -16,7 +16,8 @@
     "plan": "node scripts/plan.ts",
     "import": "node scripts/import.ts",
     "seed": "node scripts/seed.ts",
-    "db:migrate": "wrangler d1 migrations apply finance --local"
+    "db:migrate": "wrangler d1 migrations apply finance --local",
+    "setup-code": "node scripts/setup-code.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
