@@ -61,9 +61,17 @@ describe('migratePlan', () => {
         { label: 'Groceries', category: 'Groceries', monthly: 25_500, lessOnTrips: true },
         { label: 'Shopping', category: 'Shopping', monthly: 9_000 },
       ],
-      events: v1.events,
+      events: [{ ...v1.events[0], category: 'Education' }],
       notes: ['Taxes'],
     } satisfies PlanConfig);
+  });
+
+  it('renames older category names in budgets, bills and one-offs', () => {
+    const current = migratePlan(v1);
+    const old = { ...current, budgets: [{ label: 'Leisure', category: 'Leisure', monthly: 4_500 }] };
+    const plan = migratePlan(old);
+    expect(plan.budgets).toEqual([{ label: 'Fun', category: 'Fun', monthly: 4_500 }]);
+    expect(plan.events[0].category).toBe('Education');
   });
 
   it('leaves a current plan as it is, and refuses anything else', () => {

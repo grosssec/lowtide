@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { addDays, holidaySet, monthKey, parts, toDayNumber, type ISODate } from '../shared/engine/index.ts';
-import { DEFAULT_RULES, makeCategorizer, settleAlertEntries, toLedgerEntries, type ParsedFile } from '../shared/import/index.ts';
+import { CATEGORIES, DEFAULT_RULES, makeCategorizer, settleAlertEntries, toLedgerEntries, type ParsedFile } from '../shared/import/index.ts';
 import { buildDashboard, computeActuals, monthlyBudgets, weeklyHoursBasis, type PlanConfig } from '../shared/plan/index.ts';
 import type { AppEnv } from './auth.ts';
 import { deleteEntries, getEntry, getSetting, insertEntries, loadLedger, loadRules, putSetting, updateCategory, type Entry } from './db.ts';
@@ -17,12 +17,13 @@ const pickMonth = (value: string | undefined, today: ISODate) => (value && MONTH
 
 function categoryList(ledger: Entry[], plan: PlanConfig): string[] {
   const names = new Set<string>([
-    ...DEFAULT_RULES.map((r) => r.category),
+    ...CATEGORIES.expense,
+    ...CATEGORIES.income,
+    ...CATEGORIES.transfer,
+    ...plan.jobs.map((job) => job.name),
     ...Object.keys(monthlyBudgets(plan)),
     ...ledger.map((e) => e.category),
     'Uncategorized',
-    'Other income',
-    'Between accounts',
   ]);
   return [...names].sort((a, b) => a.localeCompare(b));
 }

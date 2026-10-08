@@ -61,7 +61,7 @@ describe('categorizer', () => {
     expect(categorize('WALMART STORE 00075 AUSTIN LA', -902).category).toBe('Groceries');
     expect(categorize('AMAZON PRIME*0E2YJ0N33 AMZN.COM/BILLWA', -1_656).category).toBe('Subscriptions');
     expect(categorize('Card Purchase With Pin 07/14 Seaworld-Food Svc Orlando FL', -1_192).category).toBe('Dining out');
-    expect(categorize('Card Purchase 07/23 Sq *Phenomenal Sports B Orlando FL', -326).category).toBe('Leisure');
+    expect(categorize('Card Purchase 07/23 Sq *Phenomenal Sports B Orlando FL', -326).category).toBe('Fun');
     expect(categorize('Card Purchase 08/02 Hidden Grounds Coffee Austin LA', -500).category).toBe('Dining out');
   });
 
@@ -75,8 +75,19 @@ describe('categorizer', () => {
     expect(withPayroll('LAKESIDE CHRISTIAN UN PAYROLL PPD ID: 0000000002', 74_000)).toEqual({ category: 'Bookstore', kind: 'income' });
     // Direct deposits carry the payer's name cut at 16 characters.
     expect(withPayroll('LAKESIDE CHRIST PAYROLL PPD ID: 0000000002', 74_000)).toEqual({ category: 'Bookstore', kind: 'income' });
-    expect(withPayroll('LAKESIDE COLLEG BUSINESS OFFICE', -60_000)).toEqual({ category: 'Tuition', kind: 'expense' });
-    expect(withPayroll('Card Purchase 09/01 Lakeside Christian Uni Austin LA', -414)).toEqual({ category: 'Tuition', kind: 'expense' });
+    expect(withPayroll('LAKESIDE COLLEG BUSINESS OFFICE', -60_000)).toEqual({ category: 'Education', kind: 'expense' });
+    expect(withPayroll('Card Purchase 09/01 Lakeside Christian Uni Austin LA', -414)).toEqual({ category: 'Education', kind: 'expense' });
+  });
+
+  it('sorts pharmacy and haircuts into health & personal care, ahead of the store they are in', () => {
+    expect(categorize('Card Purchase With Pin 05/22 Walgreens Store 7301 S Winderme', -3_971).category).toBe('Health & personal care');
+    expect(categorize('GREAT CLIPS #1234 ROUND ROCK LA', -1_500).category).toBe('Health & personal care');
+    expect(categorize('WAL-MART #0075 AUSTIN LA', -7_460).category).toBe('Groceries');
+  });
+
+  it('counts refunds as money in only when money comes in', () => {
+    expect(categorize('AMAZON REFUND AMZN.COM', 2_000)).toEqual({ category: 'Refunds', kind: 'income' });
+    expect(categorize('AMAZON MKTPL*5R2YE11', -2_000).category).toBe('Shopping');
   });
 
   it('falls back by sign when nothing matches', () => {

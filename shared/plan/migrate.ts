@@ -2,6 +2,7 @@ import type { ISODate } from '../engine/dates.ts';
 import type { DailyEssential, MonthlyBill, OneOffEvent } from '../engine/flows.ts';
 import type { Cents } from '../engine/money.ts';
 import type { Job } from '../engine/schedule.ts';
+import { RENAMED_CATEGORIES } from '../import/categorize.ts';
 import type { JobConfig, Period, PlanConfig } from './config.ts';
 
 /** The first plan format: two hour levels, what-if options and one goal. */
@@ -61,10 +62,10 @@ function migrateJob(job: Job, v1: PlanV1): JobConfig {
  * it becomes one forecast: the cautious hours as the usual week, the optimistic ones as the most counted.
  */
 export function migratePlan(plan: unknown): PlanConfig {
-  if (isV2(plan)) return plan;
+  if (isV2(plan)) return renameCategories(plan);
   const v1 = plan as PlanV1;
   if (!v1 || !Array.isArray(v1.jobs) || !v1.hours) throw new Error('Unknown plan format');
-  return {
+  return renameCategories({
     version: 2,
     reserve: v1.reserve,
     goals: v1.goal ? [{ id: 'goal-1', name: v1.goal.label, target: v1.goal.amount, by: v1.goal.by }] : [],
@@ -74,5 +75,18 @@ export function migratePlan(plan: unknown): PlanConfig {
     budgets: v1.essentials.map(({ adjustments, ...budget }) => ({ ...budget, ...(adjustments?.some((a) => a.factor < 1) ? { lessOnTrips: true } : {}) })),
     events: v1.events,
     notes: v1.notIncluded ?? [],
+  });
+}
+
+/** Older category names (RENAMED_CATEGORIES) become the current ones. The same plan comes back when nothing changes. */
+function renameCategories(plan: PlanConfig): PlanConfig {
+  const renamed = (category: string) => RENAMED_CATEGORIES[category] ?? category;
+  const touched = [...plan.budgets, ...plan.bills, ...plan.events].some((item) => renamed(item.category) !== item.category);
+  if (!touched) return plan;
+  return {
+    ...plan,
+    budgets: plan.budgets.map((b) => ({ ...b, category: renamed(b.category), ...(b.label === b.category ? { label: renamed(b.label) } : {}) })),
+    bills: plan.bills.map((b) => ({ ...b, category: renamed(b.category) })),
+    events: plan.events.map((e) => ({ ...e, category: renamed(e.category) })),
   };
 }
