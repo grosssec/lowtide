@@ -7,11 +7,17 @@
     <meta name="theme-color" content="#f5f5f1" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- "default" keeps dark status bar text on the light theme; iOS tints the bar with theme-color. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Finance" />
-    <link rel="icon" type="image/png" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <meta property="og:title" content="Finance" />
+    <meta property="og:description" content="Personal cash flow: what came in, what went out, and what is safe to spend." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
     <title>Finance</title>
     <style>
       /* Splash: painted before any script runs, then replaced by the app. Mirrors <Splash /> in src/components/ui.tsx. */

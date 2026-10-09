@@ -1,10 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
 import { displayName, suggestKeyword } from '../../shared/import/display.ts';
 import type { LedgerEntry } from '../../shared/import/ledger.ts';
-import { Button, Card, Chip, Empty, ErrorNote, Field, inputClass, Loading, PageHeader, StatusIcon } from '../components/ui.tsx';
+import { Button, Card, Chip, CloseIcon, Empty, ErrorNote, Field, inputClass, Loading, PageError, PageHeader, StatusIcon } from '../components/ui.tsx';
 import { api } from '../lib/api.ts';
 import { dayLabel, monthKeyOf, monthLabel, moneyExact, parseMoneyInput, todayISO } from '../lib/format.ts';
 import { useApi } from '../lib/useApi.ts';
+import { confirmDialog, toast } from '../lib/feedback.tsx';
 import { MonthSwitcher } from './MonthPage.tsx';
 
 type Entry = LedgerEntry & { note: string | null };
@@ -28,7 +29,7 @@ function kindFor(category: string, amount: number): LedgerEntry['kind'] {
 /** A rounded square with the merchant's first letter: money in is green, transfers quiet, no category amber. */
 function Avatar({ entry }: { entry: Entry }) {
   const tone =
-    entry.kind === 'transfer' ? 'bg-surface-2 text-muted' : entry.amount > 0 ? 'bg-good-soft text-good-ink' : entry.category.startsWith('Uncategorized') ? 'bg-warning-soft text-warning-ink' : 'bg-series-1-soft text-series-1';
+    entry.kind === 'transfer' ? 'bg-surface-2 text-muted' : entry.amount > 0 ? 'bg-good-soft text-good-ink' : entry.category.startsWith('Uncategorized') ? 'bg-warning-soft text-warning-ink' : 'bg-series-1-soft text-series-1-ink';
   const letter = (displayName(entry.description).match(/[A-Za-z0-9]/)?.[0] ?? '·').toUpperCase();
   return (
     <span className={`grid size-9 shrink-0 place-items-center rounded-xl text-[13px] font-semibold ${tone}`} aria-hidden="true">
@@ -72,7 +73,7 @@ export function TransactionsPage() {
     return [...groups.entries()];
   }, [entries]);
 
-  if (!data) return error ? <ErrorNote message={error} /> : <Loading />;
+  if (!data) return error ? <PageError message={error} onRetry={reload} /> : <Loading />;
   const currentMonth = monthKeyOf(todayISO());
 
   async function importFiles(files: FileList | null) {
@@ -106,6 +107,7 @@ export function TransactionsPage() {
     try {
       await api(`/transactions/${encodeURIComponent(entry.id)}`, { method: 'PATCH', json: { category, kind: kindFor(category, entry.amount) } });
       setSimilar({ entry, category, keyword: suggestKeyword(entry.description) });
+      toast(`Moved to ${category}`);
       reload();
     } catch (e) {
       setActionError((e as Error).message);
@@ -120,6 +122,7 @@ export function TransactionsPage() {
         json: { category: similar.category, kind: kindFor(similar.category, similar.entry.amount), applyToSimilar: similar.keyword },
       });
       setSimilar(null);
+      toast(`Rule saved: "${similar.keyword}" → ${similar.category}`);
       reload();
     } catch (e) {
       setActionError((e as Error).message);
@@ -127,9 +130,16 @@ export function TransactionsPage() {
   }
 
   async function remove(entry: Entry) {
-    if (!window.confirm(`Delete "${entry.description}"?`)) return;
+    const ok = await confirmDialog({
+      title: 'Delete this entry?',
+      body: `${displayName(entry.description)} · ${moneyExact(entry.amount, { sign: true })}. Balances and the forecast update right away.`,
+      confirm: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await api(`/transactions/${encodeURIComponent(entry.id)}`, { method: 'DELETE' });
+      toast('Entry deleted');
       reload();
     } catch (e) {
       setActionError((e as Error).message);
@@ -285,9 +295,7 @@ export function TransactionsPage() {
                           className="press -mr-1 grid size-7 shrink-0 place-items-center rounded-full text-muted hover:bg-critical-soft hover:text-critical-ink"
                           aria-label="Delete entry"
                         >
-                          <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden="true">
-                            <path d="M4.5 4.5l7 7m0-7l-7 7" />
-                          </svg>
+                          <CloseIcon />
                         </button>
                       )}
                     </li>
@@ -319,6 +327,7 @@ function CashForm({ categories, onDone }: { categories: string[]; onDone: () => 
     try {
       const signed = direction === 'out' ? -cents : cents;
       await api('/transactions', { method: 'POST', json: { date, amount: signed, description, category, kind: kindFor(category, signed) } });
+      toast('Cash entry saved');
       onDone();
     } catch (e) {
       setError((e as Error).message);

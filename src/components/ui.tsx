@@ -60,7 +60,7 @@ export function Chip({ children, tone = 'neutral', className = '' }: { children:
     good: 'bg-good-soft text-good-ink',
     warning: 'bg-warning-soft text-warning-ink',
     critical: 'bg-critical-soft text-critical-ink',
-    accent: 'bg-series-1-soft text-series-1',
+    accent: 'bg-series-1-soft text-series-1-ink',
   }[tone];
   return <span className={`inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium ${styles} ${className}`}>{children}</span>;
 }
@@ -87,6 +87,23 @@ export function Chevron({ direction = 'right', className = 'size-4' }: { directi
   return (
     <svg viewBox="0 0 16 16" className={className} fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d={d} />
+    </svg>
+  );
+}
+
+/** Small line icons drawn on the same 16-unit grid and stroke as the rest. */
+export function CloseIcon({ className = 'size-3.5' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" className={className} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden="true">
+      <path d="M4.5 4.5l7 7m0-7l-7 7" />
+    </svg>
+  );
+}
+
+export function PlusIcon({ className = 'size-3.5' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" className={className} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden="true">
+      <path d="M8 3.5v9M3.5 8h9" />
     </svg>
   );
 }
@@ -236,6 +253,24 @@ export function ErrorNote({ message }: { message?: string }) {
       <StatusIcon level="critical" className="mt-0.5 size-4" />
       {message}
     </p>
+  );
+}
+
+/** A screen that couldn't load: what happened, and a way to try again. */
+export function PageError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="fade-in mx-auto mt-16 flex max-w-sm flex-col items-center rounded-2xl bg-surface px-6 py-10 text-center shadow-card" role="alert">
+      <div className="grid size-12 place-items-center rounded-2xl bg-critical-soft text-critical-ink">
+        <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden="true">
+          <path d="M2 8.5a15 15 0 0 1 20 0M5.5 12a10 10 0 0 1 13 0M9 15.5a5 5 0 0 1 6 0M12 19h.01" />
+        </svg>
+      </div>
+      <p className="mt-4 text-[15px] font-semibold text-ink">This screen didn&apos;t load</p>
+      <p className="mt-1 text-sm text-muted">{message}</p>
+      <Button variant="quiet" className="mt-5" onClick={onRetry}>
+        Try again
+      </Button>
+    </div>
   );
 }
 

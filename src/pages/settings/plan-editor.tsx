@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import type { PaidWith } from '../../../shared/engine/flows.ts';
 import type { AwayPeriod, Bill, Budget, Goal, JobConfig, Period, PlanConfig, PlannedEvent } from '../../../shared/plan/config.ts';
 import type { HoursBasis } from '../../../shared/plan/hours.ts';
-import { Button, Card, Field, inputClass } from '../../components/ui.tsx';
+import { Button, Card, CloseIcon, Field, inputClass, PlusIcon } from '../../components/ui.tsx';
 import { api } from '../../lib/api.ts';
 import { money, todayISO } from '../../lib/format.ts';
 import { MoneyField, Saved } from './fields.tsx';
@@ -108,7 +108,7 @@ function IconButton({ label, onClick, children, disabled }: { label: string; onC
 
 const Remove = ({ label, onClick }: { label: string; onClick: () => void }) => (
   <IconButton label={label} onClick={onClick}>
-    ×
+    <CloseIcon className="size-4" />
   </IconButton>
 );
 
@@ -124,8 +124,8 @@ function Row({ children, actions }: { children: ReactNode; actions: ReactNode })
 
 function AddButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return (
-    <Button variant="quiet" className="mt-3 h-9 text-xs" onClick={onClick}>
-      + {children}
+    <Button variant="quiet" size="sm" className="mt-4" onClick={onClick}>
+      <PlusIcon /> {children}
     </Button>
   );
 }

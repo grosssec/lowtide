@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { PlanConfig } from '../../../shared/plan/config.ts';
-import { Button, Card, ErrorNote } from '../../components/ui.tsx';
+import { Button, Card, CloseIcon, ErrorNote } from '../../components/ui.tsx';
 import { api } from '../../lib/api.ts';
 import { Saved, type SettingsData } from './fields.tsx';
 
@@ -29,14 +29,19 @@ export function RulesCard({ rules, onChanged }: { rules: SettingsData['rules']; 
       ) : (
         <ul className="divide-y divide-line text-sm">
           {rules.map((rule) => (
-            <li key={rule.id} className="flex items-center justify-between gap-3 py-2">
+            <li key={rule.id} className="flex items-center justify-between gap-3 py-2.5">
               <span className="min-w-0 truncate">
                 <span className="font-mono text-xs text-ink-2">{ruleLabel(rule.match)}</span>
                 {rule.sign && <span className="ml-1.5 rounded-full bg-surface-2 px-2 py-0.5 text-[11px] text-muted">{rule.sign === 'in' ? 'money in' : 'money out'}</span>} →{' '}
                 {rule.category}
               </span>
-              <button type="button" className="text-muted hover:text-critical-ink" onClick={() => remove(rule.id)} aria-label={`Delete rule ${rule.match}`}>
-                ×
+              <button
+                type="button"
+                className="press grid size-7 shrink-0 place-items-center rounded-full text-muted hover:bg-critical-soft hover:text-critical-ink"
+                onClick={() => remove(rule.id)}
+                aria-label={`Delete rule ${rule.match}`}
+              >
+                <CloseIcon />
               </button>
             </li>
           ))}

@@ -3,7 +3,7 @@ import type { DashboardData } from '../../shared/plan/index.ts';
 import { BudgetList } from '../components/budgets.tsx';
 import { BarList, Runway } from '../components/charts.tsx';
 import type { Tab } from '../components/Shell.tsx';
-import { Alerts, BigMoney, Button, Card, Chevron, Chip, ErrorNote, Loading, PageHeader, Stat, StatusIcon } from '../components/ui.tsx';
+import { Alerts, BigMoney, Button, Card, Chevron, Chip, Loading, PageError, PageHeader, Stat, StatusIcon } from '../components/ui.tsx';
 import { money, monthLabel, shiftMonth, shortDate } from '../lib/format.ts';
 import { useApi } from '../lib/useApi.ts';
 
@@ -50,8 +50,8 @@ const ACCOUNT_NAMES: Record<string, string> = { chase: 'Bank', discover: 'Card',
 
 export function MonthPage({ onGo }: { onGo: (tab: Tab) => void }) {
   const [month, setMonth] = useState<string | null>(null);
-  const { data, error, loading } = useApi<DashboardData>(`/dashboard${month ? `?month=${month}` : ''}`);
-  if (!data) return error ? <ErrorNote message={error} /> : <Loading />;
+  const { data, error, loading, reload } = useApi<DashboardData>(`/dashboard${month ? `?month=${month}` : ''}`);
+  if (!data) return error ? <PageError message={error} onRetry={reload} /> : <Loading />;
 
   const safe = data.safeToSpend;
   const next = data.nextMonth;

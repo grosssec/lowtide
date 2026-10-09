@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Shell, type Tab } from './components/Shell.tsx';
+import { Toaster } from './components/overlay.tsx';
 import { Splash } from './components/ui.tsx';
 import { api } from './lib/api.ts';
 import { LoginPage, type AuthStatus } from './pages/LoginPage.tsx';
@@ -45,11 +46,14 @@ export default function App() {
   if (!status.signedIn) return <LoginPage status={status} onSignedIn={() => window.location.reload()} />;
 
   return (
-    <Shell tab={tab} onTab={setTab}>
-      {tab === 'month' && <MonthPage onGo={setTab} />}
-      {tab === 'plan' && <PlanPage onGo={setTab} />}
-      {tab === 'transactions' && <TransactionsPage />}
-      {tab === 'settings' && <SettingsPage />}
-    </Shell>
+    <>
+      <Shell tab={tab} onTab={setTab}>
+        {tab === 'month' && <MonthPage onGo={setTab} />}
+        {tab === 'plan' && <PlanPage onGo={setTab} />}
+        {tab === 'transactions' && <TransactionsPage />}
+        {tab === 'settings' && <SettingsPage />}
+      </Shell>
+      <Toaster />
+    </>
   );
 }

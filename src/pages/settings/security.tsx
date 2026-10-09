@@ -1,6 +1,7 @@
 import { startRegistration } from '@simplewebauthn/browser';
 import { useState } from 'react';
 import { Button, Card, Chip, ErrorNote, Loading, StatusIcon } from '../../components/ui.tsx';
+import { confirmDialog } from '../../lib/feedback.tsx';
 import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { Saved } from './fields.tsx';
@@ -54,11 +55,23 @@ export function SecurityCard() {
       await api('/auth/register/verify', { method: 'POST', json: { challengeId, response } });
     });
   const endSession = (handle: string) => run(() => api(`/security/sessions/${handle}`, { method: 'DELETE' }));
-  const endOthers = () => run(() => api('/security/sessions/others/end', { method: 'POST', json: {} }));
-  const removePasskey = (id: string, label: string) => {
-    if (window.confirm(`Remove the passkey "${label}"? That device will no longer be able to sign in.`)) {
-      void run(() => api(`/security/passkeys/${encodeURIComponent(id)}`, { method: 'DELETE' }));
-    }
+  const endOthers = async () => {
+    const ok = await confirmDialog({
+      title: 'Sign out all other devices?',
+      body: 'Every device except this one will need Face ID or Touch ID again. Passkeys stay as they are.',
+      confirm: 'Sign them out',
+      danger: true,
+    });
+    if (ok) void run(() => api('/security/sessions/others/end', { method: 'POST', json: {} }));
+  };
+  const removePasskey = async (id: string, label: string) => {
+    const ok = await confirmDialog({
+      title: `Remove "${label}"?`,
+      body: 'That device will no longer be able to sign in. You can add it again later with a device code.',
+      confirm: 'Remove passkey',
+      danger: true,
+    });
+    if (ok) void run(() => api(`/security/passkeys/${encodeURIComponent(id)}`, { method: 'DELETE' }));
   };
   const makeCode = () =>
     run(async () => {

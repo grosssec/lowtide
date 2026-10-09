@@ -3,7 +3,7 @@ import type { Actuals, PlanConfig } from '../../shared/plan/config.ts';
 import { buildYearPlan, type GoalStatus } from '../../shared/plan/year.ts';
 import { MonthLines } from '../components/charts.tsx';
 import type { Tab } from '../components/Shell.tsx';
-import { Button, Card, Chevron, Chip, Empty, ErrorNote, Loading, PageHeader } from '../components/ui.tsx';
+import { Button, Card, Chevron, Chip, Empty, Loading, PageError, PageHeader } from '../components/ui.tsx';
 import { money, monthLabel, monthShort, shortDate } from '../lib/format.ts';
 import { useApi } from '../lib/useApi.ts';
 
@@ -42,11 +42,11 @@ function GoalRow({ goal, today }: { goal: GoalStatus; today: string }) {
 }
 
 export function PlanPage({ onGo }: { onGo: (tab: Tab) => void }) {
-  const { data: inputs, error } = useApi<{ plan: PlanConfig; actuals: Actuals }>('/plan');
+  const { data: inputs, error, reload } = useApi<{ plan: PlanConfig; actuals: Actuals }>('/plan');
   // Computed here, not on the Worker: it needs more CPU than the free plan allows per request.
   const data = useMemo(() => (inputs ? buildYearPlan(inputs.plan, inputs.actuals) : undefined), [inputs]);
   const [view, setView] = useState<'total' | 'free'>('total');
-  if (!data || !inputs) return error ? <ErrorNote message={error} /> : <Loading />;
+  if (!data || !inputs) return error ? <PageError message={error} onRetry={reload} /> : <Loading />;
 
   const months = data.months.map((m) => m.month);
   const floor = months.map((m) => (`${m}-31` >= data.reserve.from ? data.reserve.amount : null));
