@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Shell, type Tab } from './components/Shell.tsx';
+import { Shell, type Route, type Tab } from './components/Shell.tsx';
 import { Toaster } from './components/overlay.tsx';
 import { Splash } from './components/ui.tsx';
 import { api } from './lib/api.ts';
@@ -11,12 +11,13 @@ import { TransactionsPage } from './pages/TransactionsPage.tsx';
 
 const TABS: Tab[] = ['month', 'plan', 'transactions', 'settings'];
 const tabFromHash = (): Tab => {
-  const hash = window.location.hash.replace('#', '') as Tab;
+  // "#settings/balances" is the Settings tab with a section open.
+  const hash = window.location.hash.replace('#', '').split('/')[0] as Tab;
   return TABS.includes(hash) ? hash : 'month';
 };
 
 /** Tab lives in the URL hash, so reloads and the iOS back gesture keep the place. */
-function useHashTab(): [Tab, (tab: Tab) => void] {
+function useHashTab(): [Tab, (route: Route) => void] {
   const [tab, setTab] = useState<Tab>(tabFromHash);
   useEffect(() => {
     const onChange = () => setTab(tabFromHash());

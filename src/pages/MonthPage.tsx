@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { DashboardData } from '../../shared/plan/index.ts';
 import { BudgetList } from '../components/budgets.tsx';
 import { BarList, Runway } from '../components/charts.tsx';
-import type { Tab } from '../components/Shell.tsx';
+import type { Route } from '../components/Shell.tsx';
 import { Alerts, BigMoney, Button, Card, Chevron, Chip, Loading, PageError, PageHeader, Stat, StatusIcon } from '../components/ui.tsx';
 import { money, monthLabel, shiftMonth, shortDate } from '../lib/format.ts';
 import { useApi } from '../lib/useApi.ts';
@@ -48,7 +48,7 @@ export function DateLeaf({ iso }: { iso: string }) {
 
 const ACCOUNT_NAMES: Record<string, string> = { chase: 'Bank', discover: 'Card', cash: 'Cash' };
 
-export function MonthPage({ onGo }: { onGo: (tab: Tab) => void }) {
+export function MonthPage({ onGo }: { onGo: (route: Route) => void }) {
   const [month, setMonth] = useState<string | null>(null);
   const { data, error, loading, reload } = useApi<DashboardData>(`/dashboard${month ? `?month=${month}` : ''}`);
   if (!data) return error ? <PageError message={error} onRetry={reload} /> : <Loading />;
@@ -231,7 +231,7 @@ export function MonthPage({ onGo }: { onGo: (tab: Tab) => void }) {
         <Card
           title="Where it went"
           action={
-            <Button variant="ghost" size="sm" className="-mr-2" onClick={() => onGo('settings')}>
+            <Button variant="ghost" size="sm" className="-mr-2" onClick={() => onGo('settings/spending')}>
               Edit budgets <Chevron className="size-3.5" />
             </Button>
           }
@@ -268,7 +268,7 @@ export function MonthPage({ onGo }: { onGo: (tab: Tab) => void }) {
           <Button variant="quiet" size="sm" onClick={() => onGo('transactions')}>
             Import statements
           </Button>
-          <Button variant="quiet" size="sm" onClick={() => onGo('settings')}>
+          <Button variant="quiet" size="sm" onClick={() => onGo('settings/balances')}>
             Update balances
           </Button>
         </span>

@@ -82,8 +82,8 @@ export function Empty({ title, children, icon }: { title: string; children?: Rea
   );
 }
 
-export function Chevron({ direction = 'right', className = 'size-4' }: { direction?: 'left' | 'right' | 'down'; className?: string }) {
-  const d = { left: 'M10 3.5L5.5 8l4.5 4.5', right: 'M6 3.5L10.5 8 6 12.5', down: 'M3.5 6L8 10.5 12.5 6' }[direction];
+export function Chevron({ direction = 'right', className = 'size-4' }: { direction?: 'left' | 'right' | 'up' | 'down'; className?: string }) {
+  const d = { left: 'M10 3.5L5.5 8l4.5 4.5', right: 'M6 3.5L10.5 8 6 12.5', up: 'M3.5 10L8 5.5l4.5 4.5', down: 'M3.5 6L8 10.5 12.5 6' }[direction];
   return (
     <svg viewBox="0 0 16 16" className={className} fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d={d} />
@@ -233,12 +233,18 @@ export function Button({
   );
 }
 
+/**
+ * A labeled control. In a grid row the fields stretch to the same height and the inputs line up at the bottom,
+ * even when a neighbour's label wraps; a field with a hint keeps its input right under the label instead.
+ */
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return (
-    <label className="block text-sm">
+    <label className="flex h-full min-w-0 flex-col text-sm">
       <span className="mb-1.5 block text-[13px] font-medium text-ink-2">{label}</span>
-      {children}
-      {hint && <span className="mt-1 block text-xs text-muted">{hint}</span>}
+      <span className={`block min-w-0 ${hint ? '' : 'mt-auto'}`}>
+        {children}
+        {hint && <span className="mt-1.5 block text-xs text-muted">{hint}</span>}
+      </span>
     </label>
   );
 }
@@ -253,6 +259,23 @@ export function ErrorNote({ message }: { message?: string }) {
       <StatusIcon level="critical" className="mt-0.5 size-4" />
       {message}
     </p>
+  );
+}
+
+/** The first few items of a list, and a button to show the rest. */
+export function ShowMore<T>({ items, limit, render, className = '' }: { items: T[]; limit: number; render: (item: T, index: number) => ReactNode; className?: string }) {
+  const [all, setAll] = useState(false);
+  const shown = all ? items : items.slice(0, limit);
+  return (
+    <>
+      <ul className={className}>{shown.map(render)}</ul>
+      {items.length > limit && (
+        <Button variant="ghost" size="sm" className="-ml-3 mt-2" onClick={() => setAll((a) => !a)} aria-expanded={all}>
+          {all ? 'Show fewer' : `Show all ${items.length}`}
+          <Chevron direction={all ? 'up' : 'down'} className="size-3.5" />
+        </Button>
+      )}
+    </>
   );
 }
 

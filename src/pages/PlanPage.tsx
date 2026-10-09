@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Actuals, PlanConfig } from '../../shared/plan/config.ts';
 import { buildYearPlan, type GoalStatus } from '../../shared/plan/year.ts';
 import { MonthLines } from '../components/charts.tsx';
-import type { Tab } from '../components/Shell.tsx';
+import type { Route } from '../components/Shell.tsx';
 import { Button, Card, Chevron, Chip, Empty, Loading, PageError, PageHeader } from '../components/ui.tsx';
 import { money, monthLabel, monthShort, shortDate } from '../lib/format.ts';
 import { useApi } from '../lib/useApi.ts';
@@ -25,15 +25,18 @@ function GoalRow({ goal, today }: { goal: GoalStatus; today: string }) {
         <Chip tone={goal.reached ? 'good' : 'warning'}>{goal.reached ? 'On track' : `${money(goal.shortBy)} short`}</Chip>
       </div>
       <div className="relative mt-4 h-2 overflow-hidden rounded-full bg-surface-3" aria-hidden="true">
-        <div className="grow-x absolute inset-y-0 left-0 rounded-full bg-series-1-soft" style={{ width: `${projectedShare * 100}%` }} />
+        <div className="forecast-stripes grow-x absolute inset-y-0 left-0 rounded-full" style={{ width: `${projectedShare * 100}%` }} />
         <div className="grow-x absolute inset-y-0 left-0 rounded-full bg-series-1" style={{ width: `${nowShare * 100}%` }} />
       </div>
-      <div className="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-1 text-xs text-muted">
-        <span>
-          Now <span className="num font-medium text-ink">{money(goal.now)}</span> · {Math.round(nowShare * 100)}%
+      <div className="mt-2.5 flex flex-wrap justify-between gap-x-4 gap-y-1.5 text-xs text-muted">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-series-1" aria-hidden="true" />
+          Saved now <span className="num font-medium text-ink">{money(goal.now)}</span> · {Math.round(nowShare * 100)}%
         </span>
-        <span>
-          {goal.hasDate ? `On ${longDate(goal.date, today)}` : 'In 12 months'}: <span className="num font-medium text-ink">{money(goal.projected)}</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="forecast-stripes size-2 rounded-full" aria-hidden="true" />
+          Forecast {goal.hasDate ? `by ${longDate(goal.date, today)}` : 'in 12 months'} <span className="num font-medium text-ink">{money(goal.projected)}</span> ·{' '}
+          {Math.round(projectedShare * 100)}%
         </span>
       </div>
       {!goal.reached && <p className="mt-3 text-[13px] text-ink-2">Save about {money(goal.perMonth)} more a month to make it.</p>}
@@ -41,7 +44,7 @@ function GoalRow({ goal, today }: { goal: GoalStatus; today: string }) {
   );
 }
 
-export function PlanPage({ onGo }: { onGo: (tab: Tab) => void }) {
+export function PlanPage({ onGo }: { onGo: (route: Route) => void }) {
   const { data: inputs, error, reload } = useApi<{ plan: PlanConfig; actuals: Actuals }>('/plan');
   // Computed here, not on the Worker: it needs more CPU than the free plan allows per request.
   const data = useMemo(() => (inputs ? buildYearPlan(inputs.plan, inputs.actuals) : undefined), [inputs]);
@@ -52,8 +55,8 @@ export function PlanPage({ onGo }: { onGo: (tab: Tab) => void }) {
   const floor = months.map((m) => (`${m}-31` >= data.reserve.from ? data.reserve.amount : null));
   const reserve = money(data.reserve.amount);
   const toggle = 'press h-7 rounded-full px-3 text-xs font-medium';
-  const edit = (
-    <Button variant="ghost" size="sm" className="-mr-2" onClick={() => onGo('settings')}>
+  const edit = (route: Route) => (
+    <Button variant="ghost" size="sm" className="-mr-2" onClick={() => onGo(route)}>
       Edit <Chevron className="size-3.5" />
     </Button>
   );
@@ -135,7 +138,7 @@ export function PlanPage({ onGo }: { onGo: (tab: Tab) => void }) {
         </p>
       </Card>
 
-      <Card title="Goals" action={edit}>
+      <Card title="Goals" action={edit('settings/goals')}>
         {data.goals.length ? (
           <>
             <ul className="space-y-3">
@@ -144,8 +147,8 @@ export function PlanPage({ onGo }: { onGo: (tab: Tab) => void }) {
               ))}
             </ul>
             <p className="mt-4 text-xs text-muted">
-              Goals fill in order, after the {reserve} reserve: a goal counts only what is left once the ones above it are complete. Dark bar: now. Light bar:
-              the forecast on the goal&apos;s date.
+              Goals fill in order, after the {reserve} reserve: a goal counts only what is left once the ones above it are complete. The striped part is
+              what the forecast expects you to have saved by the goal&apos;s date.
             </p>
           </>
         ) : (
@@ -172,7 +175,7 @@ export function PlanPage({ onGo }: { onGo: (tab: Tab) => void }) {
         </Card>
       )}
 
-      <Card title="What the forecast assumes" action={edit}>
+      <Card title="What the forecast assumes" action={edit('settings/jobs')}>
         <ul className="space-y-2.5 text-sm text-ink-2">
           {data.assumptions.map((item) => (
             <li key={item} className="flex gap-2.5">

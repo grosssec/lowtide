@@ -1,6 +1,6 @@
 import { startRegistration } from '@simplewebauthn/browser';
 import { useState } from 'react';
-import { Button, Card, Chip, ErrorNote, Loading, StatusIcon } from '../../components/ui.tsx';
+import { Button, Card, Chip, ErrorNote, Loading, ShowMore, StatusIcon } from '../../components/ui.tsx';
 import { confirmDialog } from '../../lib/feedback.tsx';
 import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -84,7 +84,7 @@ export function SecurityCard() {
 
   return (
     <Card title="Security">
-      <p className="text-sm text-ink-2">Sign-in uses passkeys (Face ID / Touch ID): no passwords to steal. Lost a device? Sign it out and remove its passkey here.</p>
+      <p className="-mt-1 text-sm text-ink-2">Sign-in uses passkeys (Face ID / Touch ID): no passwords to steal. Lost a device? Sign it out and remove its passkey here.</p>
       {!data ? (
         error ? <ErrorNote message={error} /> : <Loading variant="inline" />
       ) : (
@@ -143,9 +143,12 @@ export function SecurityCard() {
           <section>
             <h3 className="text-xs font-medium text-muted">Recent activity</h3>
             {data.events.length ? (
-              <ul className="divide-y divide-line text-sm">
-                {data.events.map((e, i) => (
-                  <li key={`${e.at}-${i}`} className="flex items-start gap-2.5 py-2">
+              <ShowMore
+                items={data.events}
+                limit={5}
+                className="divide-y divide-line text-sm"
+                render={(e, i) => (
+                  <li key={`${e.at}-${i}`} className="flex items-start gap-2.5 py-2.5">
                     <StatusIcon level={e.type === 'sign_in' || e.type === 'passkey_added' ? 'info' : 'warning'} className="mt-0.5 size-4" />
                     <span className="min-w-0">
                       <span className="text-ink">{EVENT_TEXT[e.type] ?? e.type}</span>
@@ -156,8 +159,8 @@ export function SecurityCard() {
                       </span>
                     </span>
                   </li>
-                ))}
-              </ul>
+                )}
+              />
             ) : (
               <p className="mt-1 text-sm text-muted">Nothing yet: sign-ins and changes show up here.</p>
             )}

@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 
 export type Tab = 'month' | 'plan' | 'transactions' | 'settings';
+/** A tab, or a Settings section ("settings/goals"). */
+export type Route = Tab | `settings/${string}`;
 
 const ICONS: Record<Tab, ReactNode> = {
   month: <path d="M4 18V9m5.3 9V5m5.4 13v-6m5.3 6V8" strokeLinecap="round" />,
