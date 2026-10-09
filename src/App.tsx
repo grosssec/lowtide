@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Shell, type Tab } from './components/Shell.tsx';
-import { Loading } from './components/ui.tsx';
+import { Splash } from './components/ui.tsx';
 import { api } from './lib/api.ts';
 import { LoginPage, type AuthStatus } from './pages/LoginPage.tsx';
 import { MonthPage } from './pages/MonthPage.tsx';
@@ -41,7 +41,7 @@ export default function App() {
       .catch(() => setStatus({ signedIn: false, hasPasskey: true, bypass: false }));
   }, []);
 
-  if (!status) return <Loading />;
+  if (!status) return <Splash />;
   if (!status.signedIn) return <LoginPage status={status} onSignedIn={() => window.location.reload()} />;
 
   return (

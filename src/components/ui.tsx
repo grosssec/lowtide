@@ -128,11 +128,61 @@ export function ErrorNote({ message }: { message?: string }) {
   );
 }
 
-export function Loading({ label = 'Loading' }: { label?: string }) {
+/** Full-screen splash while the app starts: the logo with its bars rising, nothing else. */
+export function Splash() {
   return (
-    <div className="flex items-center gap-2 py-10 text-sm text-muted" role="status">
-      <span className="size-2 animate-pulse rounded-full bg-muted" />
-      {label}…
+    <div className="splash" role="status" aria-label="Loading">
+      <svg viewBox="0 0 32 32" className="size-14" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="var(--ink)" />
+        <path className="bar" d="M8 22.5V17" stroke="var(--plane)" strokeWidth="2.6" strokeLinecap="round" />
+        <path className="bar" d="M13.4 22.5V12" stroke="var(--plane)" strokeWidth="2.6" strokeLinecap="round" />
+        <path className="bar" d="M18.7 22.5v-7" stroke="var(--plane)" strokeWidth="2.6" strokeLinecap="round" />
+        <path className="bar" d="M24 22.5V9.5" stroke="var(--series-1)" strokeWidth="2.6" strokeLinecap="round" />
+      </svg>
+    </div>
+  );
+}
+
+/** A placeholder block in the shape of the content that is loading. */
+export function Skeleton({ className = '' }: { className?: string }) {
+  return <div className={`skeleton ${className}`} aria-hidden="true" />;
+}
+
+/** A card-shaped skeleton: a title line and some rows. */
+export function SkeletonCard({ rows = 3, tall = false }: { rows?: number; tall?: boolean }) {
+  return (
+    <section className="rounded-xl border border-line bg-surface p-4 sm:p-5">
+      <Skeleton className="h-3.5 w-28" />
+      {tall && <Skeleton className="mt-4 h-12 w-40" />}
+      {tall && <Skeleton className="mt-5 h-40 w-full" />}
+      <div className="mt-4 space-y-3">
+        {Array.from({ length: rows }, (_, i) => (
+          <Skeleton key={i} className={`h-3.5 ${['w-full', 'w-5/6', 'w-2/3', 'w-3/4'][i % 4]}`} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** While a screen loads: its outline (a big card, then smaller ones), never a lone "Loading…". */
+export function Loading({ variant = 'page' }: { variant?: 'page' | 'inline' }) {
+  if (variant === 'inline') {
+    return (
+      <div className="space-y-3 py-3" role="status" aria-label="Loading">
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-4/5" />
+        <Skeleton className="h-3.5 w-3/5" />
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-4" role="status" aria-label="Loading">
+      <Skeleton className="h-6 w-44" />
+      <SkeletonCard tall rows={2} />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <SkeletonCard rows={4} />
+        <SkeletonCard rows={3} />
+      </div>
     </div>
   );
 }

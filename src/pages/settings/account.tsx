@@ -219,7 +219,7 @@ export function SyncCard({ sync, jobs }: { sync: SettingsData['sync']; jobs: Pla
 
 function AlertList() {
   const { data, error } = useApi<{ alerts: AlertItem[] }>('/alerts');
-  if (!data) return error ? <ErrorNote message={error} /> : <Loading />;
+  if (!data) return error ? <ErrorNote message={error} /> : <Loading variant="inline" />;
   if (!data.alerts.length) return <p className="mt-3 text-sm text-muted">No alert emails yet.</p>;
   return (
     <ul className="mt-3 divide-y divide-line text-sm">

@@ -73,7 +73,7 @@ export function SecurityCard() {
     <Card title="Security">
       <p className="text-sm text-ink-2">Sign-in uses passkeys (Face ID / Touch ID): no passwords to steal. Lost a device? Sign it out and remove its passkey here.</p>
       {!data ? (
-        error ? <ErrorNote message={error} /> : <Loading />
+        error ? <ErrorNote message={error} /> : <Loading variant="inline" />
       ) : (
         <div className="mt-4 space-y-5">
           <section>
