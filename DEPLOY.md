@@ -23,7 +23,7 @@ Nothing here runs without Ricardo's OK: it puts the app and his financial histor
    npx wrangler d1 migrations apply finance --remote
    npm run seed -- --remote
    ```
-5. Secrets: the setup code for the first passkey, the sync token for the Apps Script, and the push keys. This writes them into `.env` (gitignored, never in chat) and stores them as Worker secrets:
+5. Secrets: the sync token for the Apps Script, the key that signs sign-in challenges, and the push keys. This writes them into `.env` (gitignored, never in chat) and stores them as Worker secrets:
    ```bash
    node scripts/secrets.ts --remote
    ```
@@ -31,9 +31,8 @@ Nothing here runs without Ricardo's OK: it puts the app and his financial histor
    ```bash
    npm run deploy
    ```
-   - The app is served at `https://finance-dashboard.<account-subdomain>.workers.dev`.
+   - The app is served at the custom domain in `wrangler.jsonc` (`routes`). Its zone must be on Cloudflare; set SSL/TLS → Edge Certificates → **Minimum TLS 1.2** and **Always Use HTTPS** there. `workers_dev: false` keeps the workers.dev address off.
    - The hourly Cron Trigger (daily push at 8 am Chicago time) is part of the deploy.
-   - A new account first needs a workers.dev subdomain. Opening Workers & Pages in the dashboard creates one, or register it through the API. This account uses `ricardogross`.
 
 ## Check before using it
 
@@ -46,15 +45,13 @@ curl -s https://<app-url>/api/ingest/digest # {"error":"Not allowed"}
 
 ## First sign-in
 
-1. On the Mac (Safari):
-   1. Open the URL.
-   2. Type the setup code (`SETUP_TOKEN` in `.env`).
-   3. Confirm with Touch ID. The passkey syncs to the iPhone through iCloud Keychain.
-2. On the iPhone (Safari):
-   1. Open the URL and sign in with Face ID.
-   2. Share → **Add to Home Screen**.
-   3. Open **Finance** from the Home Screen → Settings → Daily notification → **Turn on for this device**. iOS only allows web notifications for apps added to the Home Screen.
-3. Optional hygiene once a passkey exists: `npx wrangler secret delete SETUP_TOKEN`. After that, new passkeys can only be added while signed in, from Settings.
+1. Make a one-time device code (it prints in your terminal only, works once, for 15 minutes):
+   ```bash
+   npm run setup-code -- --remote
+   ```
+2. On the Mac (Safari): open the app → **New device? Use a code** → type the code → confirm with Touch ID. The passkey syncs to the iPhone through iCloud Keychain.
+3. On the iPhone (Safari): open the app, sign in with Face ID, then Share → **Add to Home Screen**. Open it from the Home Screen → Settings → Daily notification → **Turn on for this device**.
+4. Any other device: on a signed-in one, Settings → Security → **Add a device** shows a code; type it on the new device.
 
 ## Automatic sync
 

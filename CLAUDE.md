@@ -13,7 +13,8 @@ Ricardo's personal finance dashboard. Product decisions and status: vault note `
 ## Commands
 - `npm run dev`: app + Worker locally (`.dev.vars` `DEV_AUTH_BYPASS=1` skips sign-in on localhost only)
 - `npm run db:migrate` / `npm run seed`: local D1 tables / load `data/` into local D1 without overwriting app edits (`-- --plan` replaces only the plan, `-- --force` replaces everything, `-- --remote` only with Ricardo's OK)
-- `node scripts/secrets.ts`: SETUP_TOKEN, INGEST_TOKEN and VAPID keys into `.dev.vars` (`--remote`: into `.env` + `wrangler secret put`). Never print the values.
+- `node scripts/secrets.ts`: INGEST_TOKEN, CHALLENGE_KEY and VAPID keys into `.dev.vars` (`--remote`: into `.env` + `wrangler secret put`; `--only NAME` for one). Never print the values.
+- `npm run setup-code` (`-- --remote`): one-time device code for a first passkey or recovery. Ricardo runs the remote one himself.
 - `npm test`, `npm run typecheck`, `npm run lint`: run all three before calling work done
 - `npm run plan`: cash-flow plan from `data/plan.local.json` (`scripts/plan.example.json` documents the shape)
 - `npm run import`: `data/imports/*` (Chase statement PDFs, Chase/Discover CSVs) → `data/ledger.json`. Personal category rules in `data/rules.local.json` run before `DEFAULT_RULES` (`shared/import/categorize.ts`)

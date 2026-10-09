@@ -50,7 +50,8 @@ Personal finance dashboard: what came in, what went out, the month's result, a f
 npm install
 npm run db:migrate      # local D1 tables
 npm run seed            # local D1 ← data/ledger.json, data/plan.local.json, data/rules.local.json
-node scripts/secrets.ts # local secrets (setup code, sync token, push keys) → .dev.vars
+node scripts/secrets.ts # local secrets (sync token, challenge key, push keys) → .dev.vars
+npm run setup-code      # one-time code for the first local passkey
 ```
 `.dev.vars` (gitignored) holds local secrets; `DEV_AUTH_BYPASS=1` skips sign-in on localhost only.
 
@@ -70,6 +71,9 @@ npm run lint       # oxlint
 
 ## Stack
 React 19 + Vite 8 + Tailwind 4, Cloudflare Workers (Vite plugin, Wrangler 4, Cron Triggers), Hono, D1, Zod, SimpleWebAuthn, unpdf (browser only), Web Push over WebCrypto (no library), Google Apps Script, Vitest, oxlint.
+
+## Security
+Passkey-only sign-in, signed stateless challenges, `__Host-` session cookies, a Security screen (devices, passkeys, activity log), TLS 1.2+, and two reviews (automated + Trail of Bits sharp edges + OWASP Top 10). Threat model, controls and findings: [SECURITY.md](SECURITY.md).
 
 ## Privacy
 - No real financial data in git: statements, balances and plan inputs stay in `data/`, secrets stay in `.env` / `.dev.vars`.

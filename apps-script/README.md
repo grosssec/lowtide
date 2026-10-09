@@ -33,7 +33,7 @@ Use email, not only push or text: the script only sees email.
    - replace everything in `Code.gs` with this folder's `Code.gs`
    - replace everything in `appsscript.json` with this folder's `appsscript.json` (this also turns on the Gmail API service)
 4. **Project Settings → Script properties → Add script property**:
-   - `APP_URL` = the app address, e.g. `https://finance-dashboard.<your-subdomain>.workers.dev`
+   - `APP_URL` = the app address, e.g. `https://finance.example.com`
    - `INGEST_TOKEN` = the value in the project's `.env` file (created by `node scripts/secrets.ts --remote`). Copy it from the file; never send it in a chat or email.
    - `UMM_SHEET_ID` and `BOOKSTORE_SHEET_ID`: the long id in each timesheet's URL (`docs.google.com/spreadsheets/d/<id>/edit`). Leave one out until you have it: that sheet is just skipped.
 
