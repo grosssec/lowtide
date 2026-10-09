@@ -1,9 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
 import { displayName, suggestKeyword } from '../../shared/import/display.ts';
 import type { LedgerEntry } from '../../shared/import/ledger.ts';
-import { Button, Card, ErrorNote, Field, inputClass, Loading, StatusIcon } from '../components/ui.tsx';
+import { Button, Card, Chip, Empty, ErrorNote, Field, inputClass, Loading, PageHeader, StatusIcon } from '../components/ui.tsx';
 import { api } from '../lib/api.ts';
-import { dayLabel, monthKeyOf, moneyExact, parseMoneyInput, todayISO } from '../lib/format.ts';
+import { dayLabel, monthKeyOf, monthLabel, moneyExact, parseMoneyInput, todayISO } from '../lib/format.ts';
 import { useApi } from '../lib/useApi.ts';
 import { MonthSwitcher } from './MonthPage.tsx';
 
@@ -23,6 +23,18 @@ const FILTERS: [Filter, string][] = [
 function kindFor(category: string, amount: number): LedgerEntry['kind'] {
   if (TRANSFER_CATEGORIES.has(category)) return 'transfer';
   return amount >= 0 ? 'income' : 'expense';
+}
+
+/** A rounded square with the merchant's first letter: money in is green, transfers quiet, no category amber. */
+function Avatar({ entry }: { entry: Entry }) {
+  const tone =
+    entry.kind === 'transfer' ? 'bg-surface-2 text-muted' : entry.amount > 0 ? 'bg-good-soft text-good-ink' : entry.category.startsWith('Uncategorized') ? 'bg-warning-soft text-warning-ink' : 'bg-series-1-soft text-series-1';
+  const letter = (displayName(entry.description).match(/[A-Za-z0-9]/)?.[0] ?? '·').toUpperCase();
+  return (
+    <span className={`grid size-9 shrink-0 place-items-center rounded-xl text-[13px] font-semibold ${tone}`} aria-hidden="true">
+      {letter}
+    </span>
+  );
 }
 
 interface ImportResult {
@@ -125,19 +137,28 @@ export function TransactionsPage() {
   }
 
   return (
-    <div className={`space-y-4 transition-opacity ${loading ? 'opacity-60' : ''}`}>
-      <MonthSwitcher month={data.month} canNext={data.month < currentMonth} onChange={setMonth} />
+    <div className={`stagger space-y-4 transition-opacity duration-200 ${loading ? 'opacity-60' : ''}`}>
+      <PageHeader
+        eyebrow="Transactions"
+        title={monthLabel(data.month)}
+        actions={<MonthSwitcher month={data.month} canNext={data.month < currentMonth} onChange={setMonth} />}
+      />
 
-      <div className="flex flex-wrap gap-2">
-        <Button onClick={() => fileInput.current?.click()} disabled={busy}>
-          {busy ? 'Importing…' : 'Import statements'}
-        </Button>
-        <Button variant="quiet" onClick={() => setShowCash((v) => !v)}>
-          {showCash ? 'Close' : 'Add cash'}
-        </Button>
-        <input ref={fileInput} type="file" accept=".pdf,.csv" multiple hidden onChange={(e) => importFiles(e.target.files)} />
+      <div>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => fileInput.current?.click()} disabled={busy}>
+            <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M8 10.5V2.5M5 5.5l3-3 3 3M2.5 10v2.5a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V10" />
+            </svg>
+            {busy ? 'Importing…' : 'Import statements'}
+          </Button>
+          <Button variant="quiet" onClick={() => setShowCash((v) => !v)}>
+            {showCash ? 'Close' : 'Add cash'}
+          </Button>
+          <input ref={fileInput} type="file" accept=".pdf,.csv" multiple hidden onChange={(e) => importFiles(e.target.files)} />
+        </div>
+        <p className="mt-2 text-xs text-muted">Chase statement PDFs, or CSV downloads from chase.com and discover.com. Screenshots can't be read.</p>
       </div>
-      <p className="-mt-2 text-xs text-muted">Chase statement PDFs, or CSV downloads from chase.com and discover.com. Screenshots can't be read.</p>
 
       {results.length > 0 && (
         <Card>
@@ -188,70 +209,93 @@ export function TransactionsPage() {
         </Card>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
-        {FILTERS.map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setFilter(key)}
-            aria-pressed={filter === key}
-            className={`h-8 rounded-full border px-3 text-xs ${filter === key ? 'border-ink bg-ink text-plane' : 'border-line bg-surface text-ink-2 hover:text-ink'}`}
-          >
-            {label}
-          </button>
-        ))}
-        <input className={`${inputClass} ml-auto h-8 w-full sm:w-56`} placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search transactions" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
+          {FILTERS.map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setFilter(key)}
+              aria-pressed={filter === key}
+              className={`press h-8 shrink-0 rounded-full px-3.5 text-[13px] font-medium ${filter === key ? 'bg-ink text-plane' : 'bg-surface text-ink-2 shadow-card hover:text-ink'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="relative sm:ml-auto sm:w-60">
+          <svg viewBox="0 0 16 16" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" aria-hidden="true">
+            <circle cx="7" cy="7" r="4.5" />
+            <path d="M10.5 10.5L14 14" />
+          </svg>
+          <input className={`${inputClass} h-9 rounded-full pl-9`} placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search transactions" />
+        </div>
       </div>
 
       {byDay.length === 0 ? (
         <Card>
-          <p className="text-sm text-muted">No transactions here yet. Import a statement or add cash.</p>
+          <Empty title={query || filter !== 'all' ? 'Nothing matches' : 'No transactions here yet'}>
+            {query || filter !== 'all' ? 'Try another filter or search.' : 'Import a statement or add cash, and they show up here.'}
+          </Empty>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {byDay.map(([day, items]) => (
-            <Card key={day} className="!p-0">
-              <div className="border-b border-line px-4 py-2 text-xs text-muted">{dayLabel(day)}</div>
-              <ul className="divide-y divide-line">
-                {items.map((entry) => (
-                  <li key={entry.id} className="flex items-center gap-3 px-4 py-2.5">
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm text-ink" title={entry.description}>
-                        {displayName(entry.description)}
+        <div className="space-y-5">
+          {byDay.map(([day, items]) => {
+            const net = items.filter((e) => e.kind !== 'transfer').reduce((sum, e) => sum + e.amount, 0);
+            return (
+              <section key={day}>
+                <div className="mb-2 flex items-baseline justify-between px-1 text-xs">
+                  <h2 className="font-medium text-ink-2">{dayLabel(day)}</h2>
+                  {net !== 0 && <span className="num text-muted">{moneyExact(net, { sign: true })}</span>}
+                </div>
+                <ul className="divide-y divide-line overflow-hidden rounded-2xl bg-surface shadow-card">
+                  {items.map((entry) => (
+                    <li key={entry.id} className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-2/60">
+                      <Avatar entry={entry} />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium text-ink" title={entry.description}>
+                          {displayName(entry.description)}
+                        </div>
+                        <div className="mt-0.5 flex items-center gap-1.5">
+                          <Chip className="!h-5 !px-2 !text-[11px]">{ACCOUNT[entry.account] ?? entry.account}</Chip>
+                          {entry.source === 'alert' && (
+                            <Chip tone="accent" className="!h-5 !px-2 !text-[11px]">
+                              <span title="From a bank alert email; the statement or CSV replaces it">alert</span>
+                            </Chip>
+                          )}
+                          <select
+                            value={entry.category}
+                            onChange={(e) => changeCategory(entry, e.target.value)}
+                            className="h-6 max-w-[11rem] truncate rounded-md border border-transparent bg-transparent pr-6 text-xs text-muted transition-colors hover:border-line hover:text-ink-2 focus:border-series-1"
+                            aria-label={`Category for ${displayName(entry.description)}`}
+                          >
+                            {[...new Set([entry.category, ...data.categories])].map((c) => (
+                              <option key={c}>{c}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className="rounded border border-line px-1.5 text-[11px] text-muted">{ACCOUNT[entry.account] ?? entry.account}</span>
-                        {entry.source === 'alert' && (
-                          <span className="rounded border border-line px-1.5 text-[11px] text-muted" title="From a bank alert email; the statement or CSV replaces it">
-                            alert
-                          </span>
-                        )}
-                        <select
-                          value={entry.category}
-                          onChange={(e) => changeCategory(entry, e.target.value)}
-                          className="h-7 max-w-[11rem] rounded-md border border-transparent bg-transparent pr-6 text-xs text-ink-2 hover:border-line focus:border-series-1"
-                          aria-label={`Category for ${displayName(entry.description)}`}
+                      <div className={`num shrink-0 text-sm font-semibold ${entry.kind === 'transfer' ? 'text-muted' : entry.amount > 0 ? 'text-good-ink' : 'text-ink'}`}>
+                        {moneyExact(entry.amount, { sign: true })}
+                      </div>
+                      {(entry.source === 'manual' || entry.source === 'alert') && (
+                        <button
+                          type="button"
+                          onClick={() => remove(entry)}
+                          className="press -mr-1 grid size-7 shrink-0 place-items-center rounded-full text-muted hover:bg-critical-soft hover:text-critical-ink"
+                          aria-label="Delete entry"
                         >
-                          {[...new Set([entry.category, ...data.categories])].map((c) => (
-                            <option key={c}>{c}</option>
-                          ))}
-                        </select>
-                        {entry.category.startsWith('Uncategorized') && <StatusIcon level="info" className="size-3.5" />}
-                      </div>
-                    </div>
-                    <div className={`num shrink-0 text-sm ${entry.kind === 'transfer' ? 'text-muted' : entry.amount > 0 ? 'text-good-ink' : 'text-ink'}`}>
-                      {moneyExact(entry.amount, { sign: true })}
-                    </div>
-                    {(entry.source === 'manual' || entry.source === 'alert') && (
-                      <button type="button" onClick={() => remove(entry)} className="text-muted hover:text-critical-ink" aria-label="Delete entry">
-                        ×
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          ))}
+                          <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden="true">
+                            <path d="M4.5 4.5l7 7m0-7l-7 7" />
+                          </svg>
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
         </div>
       )}
     </div>
@@ -286,7 +330,7 @@ function CashForm({ categories, onDone }: { categories: string[]; onDone: () => 
   return (
     <Card title="Cash">
       <form onSubmit={save} className="grid gap-3 sm:grid-cols-2">
-        <div className="flex gap-2 sm:col-span-2">
+        <div className="flex gap-1 rounded-xl bg-surface-2 p-1 sm:col-span-2">
           {(['out', 'in'] as const).map((d) => (
             <button
               key={d}
@@ -296,7 +340,7 @@ function CashForm({ categories, onDone }: { categories: string[]; onDone: () => 
                 setCategory(d === 'in' ? 'Side income' : 'Dining out');
               }}
               aria-pressed={direction === d}
-              className={`h-9 flex-1 rounded-lg border text-sm ${direction === d ? 'border-ink bg-ink text-plane' : 'border-line bg-surface text-ink-2'}`}
+              className={`press h-9 flex-1 rounded-lg text-sm font-medium ${direction === d ? 'bg-surface text-ink shadow-card' : 'text-ink-2 hover:text-ink'}`}
             >
               {d === 'out' ? 'Spent' : 'Received'}
             </button>

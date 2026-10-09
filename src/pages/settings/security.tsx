@@ -1,6 +1,6 @@
 import { startRegistration } from '@simplewebauthn/browser';
 import { useState } from 'react';
-import { Button, Card, ErrorNote, Loading, StatusIcon } from '../../components/ui.tsx';
+import { Button, Card, Chip, ErrorNote, Loading, StatusIcon } from '../../components/ui.tsx';
 import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { Saved } from './fields.tsx';
@@ -90,13 +90,13 @@ export function SecurityCard() {
                 <Row key={s.handle}>
                   <span className="min-w-0">
                     <span className="text-ink">{s.device}</span>
-                    {s.current && <span className="ml-2 rounded border border-line px-1.5 text-[11px] text-muted">this device</span>}
+                    {s.current && <Chip tone="accent" className="ml-2 !h-5 !px-2 !text-[11px]">this device</Chip>}
                     <span className="block text-xs text-muted">
                       {s.place ? `${s.place} · ` : ''}last active {when(s.lastSeen)} · signed in {when(s.since)}
                     </span>
                   </span>
                   {!s.current && (
-                    <Button variant="danger" className="h-8 shrink-0 px-3 text-xs" onClick={() => endSession(s.handle)}>
+                    <Button variant="danger" size="sm" onClick={() => endSession(s.handle)}>
                       Sign out
                     </Button>
                   )}
@@ -118,7 +118,7 @@ export function SecurityCard() {
                     </span>
                   </span>
                   {data.passkeys.length > 1 && (
-                    <Button variant="danger" className="h-8 shrink-0 px-3 text-xs" onClick={() => removePasskey(p.id, p.label)}>
+                    <Button variant="danger" size="sm" onClick={() => removePasskey(p.id, p.label)}>
                       Remove
                     </Button>
                   )}
@@ -153,9 +153,9 @@ export function SecurityCard() {
         </div>
       )}
       {code && (
-        <div className="mt-4 rounded-lg border border-line bg-surface-2 p-3 text-sm">
+        <div className="mt-4 rounded-xl bg-series-1-soft/50 p-4 text-sm">
           <div className="text-ink-2">On the new device, open the app, tap "New device? Use a code" and type:</div>
-          <div className="num mt-1 text-2xl font-semibold tracking-widest text-ink">{code.code}</div>
+          <div className="num my-2 text-3xl font-semibold tracking-[0.2em] text-ink">{code.code}</div>
           <div className="text-xs text-muted">Works once, for {code.minutes} minutes. Don't send it to anyone.</div>
         </div>
       )}

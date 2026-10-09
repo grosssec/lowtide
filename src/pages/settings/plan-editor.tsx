@@ -99,7 +99,7 @@ function IconButton({ label, onClick, children, disabled }: { label: string; onC
       title={label}
       disabled={disabled}
       onClick={onClick}
-      className="grid size-10 shrink-0 place-items-center rounded-lg border border-line bg-surface text-muted hover:text-ink disabled:opacity-30"
+      className="press grid size-10 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface-2 hover:text-ink disabled:opacity-30"
     >
       {children}
     </button>
@@ -459,7 +459,7 @@ export function PlanEditor({
 
       {(dirty || state !== 'idle') && (
         <div className="sticky bottom-24 z-10 sm:bottom-4">
-          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface p-3 shadow-lg">
+          <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-surface/90 p-3 shadow-pop backdrop-blur-xl">
             {dirty && <span className="text-sm text-ink-2">Unsaved changes to the plan</span>}
             <Button onClick={save} disabled={!dirty}>
               Save plan

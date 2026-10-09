@@ -1,11 +1,23 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
-export function Card({ title, action, children, className = '' }: { title?: ReactNode; action?: ReactNode; children: ReactNode; className?: string }) {
+export function Card({
+  title,
+  action,
+  children,
+  className = '',
+  hero = false,
+}: {
+  title?: ReactNode;
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  hero?: boolean;
+}) {
   return (
-    <section className={`rounded-xl border border-line bg-surface p-4 sm:p-5 ${className}`}>
+    <section className={`rounded-2xl p-5 shadow-card sm:p-6 ${hero ? 'hero' : 'bg-surface'} ${className}`}>
       {(title || action) && (
-        <div className="mb-3 flex items-baseline justify-between gap-3">
-          {title && <h2 className="text-[13px] font-medium text-ink-2">{title}</h2>}
+        <div className="mb-4 flex min-h-7 items-center justify-between gap-3">
+          {title && <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-ink">{title}</h2>}
           {action}
         </div>
       )}
@@ -14,13 +26,109 @@ export function Card({ title, action, children, className = '' }: { title?: Reac
   );
 }
 
-export function Stat({ label, value, note, tone }: { label: string; value: string; note?: ReactNode; tone?: 'good' | 'bad' }) {
+/** Screen title: a small line above (where you are), the title, and controls on the right. */
+export function PageHeader({ eyebrow, title, actions }: { eyebrow?: ReactNode; title: ReactNode; actions?: ReactNode }) {
+  return (
+    <div className="flex items-end justify-between gap-4 pb-1 pt-2">
+      <div className="min-w-0">
+        {eyebrow && <div className="text-[13px] font-medium text-muted">{eyebrow}</div>}
+        <h1 className="mt-0.5 truncate text-[28px] font-semibold leading-tight tracking-[-0.03em] text-ink sm:text-[32px]">{title}</h1>
+      </div>
+      {actions && <div className="shrink-0">{actions}</div>}
+    </div>
+  );
+}
+
+export function Stat({ label, value, note, tone, icon }: { label: string; value: string; note?: ReactNode; tone?: 'good' | 'bad'; icon?: ReactNode }) {
   const color = tone === 'good' ? 'text-good-ink' : tone === 'bad' ? 'text-critical-ink' : 'text-ink';
   return (
     <div className="min-w-0">
-      <div className="text-[13px] text-muted">{label}</div>
-      <div className={`mt-1 truncate text-2xl font-semibold tracking-tight ${color}`}>{value}</div>
-      {note && <div className="mt-1 text-xs text-muted">{note}</div>}
+      <div className="flex items-center gap-1.5 text-[13px] text-muted">
+        {icon}
+        {label}
+      </div>
+      <div className={`num mt-1.5 truncate text-[22px] font-semibold tracking-[-0.02em] sm:text-2xl ${color}`}>{value}</div>
+      {note && <div className="mt-0.5 text-xs text-muted">{note}</div>}
+    </div>
+  );
+}
+
+/** A small rounded label for state: "Covered", "alert", "this device". */
+export function Chip({ children, tone = 'neutral', className = '' }: { children: ReactNode; tone?: 'neutral' | 'good' | 'warning' | 'critical' | 'accent'; className?: string }) {
+  const styles = {
+    neutral: 'bg-surface-2 text-ink-2',
+    good: 'bg-good-soft text-good-ink',
+    warning: 'bg-warning-soft text-warning-ink',
+    critical: 'bg-critical-soft text-critical-ink',
+    accent: 'bg-series-1-soft text-series-1',
+  }[tone];
+  return <span className={`inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium ${styles} ${className}`}>{children}</span>;
+}
+
+/** Nothing here yet: an icon, a line saying so, and what to do about it. */
+export function Empty({ title, children, icon }: { title: string; children?: ReactNode; icon?: ReactNode }) {
+  return (
+    <div className="flex flex-col items-center px-4 py-8 text-center">
+      <div className="grid size-11 place-items-center rounded-2xl bg-surface-2 text-muted">
+        {icon ?? (
+          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+            <path d="M4 13.5l2.6-7A2 2 0 0 1 8.5 5h7a2 2 0 0 1 1.9 1.5l2.6 7M4 13.5V18a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4.5M4 13.5h4.5l1 2h5l1-2H20" strokeLinejoin="round" />
+          </svg>
+        )}
+      </div>
+      <p className="mt-3 text-sm font-medium text-ink">{title}</p>
+      {children && <p className="mt-1 max-w-xs text-[13px] text-muted">{children}</p>}
+    </div>
+  );
+}
+
+export function Chevron({ direction = 'right', className = 'size-4' }: { direction?: 'left' | 'right' | 'down'; className?: string }) {
+  const d = { left: 'M10 3.5L5.5 8l4.5 4.5', right: 'M6 3.5L10.5 8 6 12.5', down: 'M3.5 6L8 10.5 12.5 6' }[direction];
+  return (
+    <svg viewBox="0 0 16 16" className={className} fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={d} />
+    </svg>
+  );
+}
+
+const MINUS = '−';
+
+/** Eases a number toward its new value (once, ~0.7 s); shows the final value right away when motion is reduced. */
+const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function useCountUp(target: number): number {
+  const [shown, setShown] = useState(() => (reducedMotion() ? target : 0));
+  const from = useRef(0);
+  useEffect(() => {
+    if (reducedMotion()) return;
+    const start = performance.now();
+    const origin = from.current;
+    let frame = 0;
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / 700);
+      const eased = 1 - Math.pow(1 - t, 4);
+      setShown(Math.round(origin + (target - origin) * eased));
+      if (t < 1) frame = requestAnimationFrame(step);
+      else from.current = target;
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [target]);
+  return reducedMotion() ? target : shown;
+}
+
+/** The headline number: a smaller, lifted dollar sign, whole dollars, and a quick count-up. */
+export function BigMoney({ cents, className = '' }: { cents: number; className?: string }) {
+  const shown = useCountUp(cents);
+  const dollars = Math.round(Math.abs(shown) / 100).toLocaleString('en-US');
+  const negative = Math.round(cents / 100) < 0;
+  return (
+    <div className={`num flex items-start font-semibold leading-none tracking-[-0.045em] text-ink ${className}`} aria-label={`${negative ? 'minus ' : ''}$${Math.round(Math.abs(cents) / 100).toLocaleString('en-US')}`}>
+      <span aria-hidden="true" className="flex items-start">
+        {negative && <span>{MINUS}</span>}
+        <span className="mr-0.5 mt-[0.12em] text-[0.5em] font-medium tracking-normal text-muted">$</span>
+        <span>{dollars}</span>
+      </span>
     </div>
   );
 }
@@ -69,9 +177,9 @@ const LEVEL_WORD: Record<Level, string> = { critical: 'Urgent', warning: 'Heads 
 export function Alerts({ items }: { items: { level: Level; text: string }[] }) {
   if (!items.length) return null;
   return (
-    <ul className="space-y-2">
+    <ul className="-my-1 divide-y divide-line">
       {items.map((item) => (
-        <li key={item.text} className="flex items-start gap-2.5 text-sm text-ink">
+        <li key={item.text} className="flex items-start gap-3 py-2.5 text-sm text-ink">
           <StatusIcon level={item.level} className="mt-0.5 size-4" />
           <span>
             <span className="sr-only">{LEVEL_WORD[item.level]}: </span>
@@ -86,19 +194,22 @@ export function Alerts({ items }: { items: { level: Level; text: string }[] }) {
 export function Button({
   children,
   variant = 'primary',
+  size = 'md',
   className = '',
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'quiet' | 'danger' }) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'quiet' | 'ghost' | 'danger'; size?: 'sm' | 'md' }) {
   const styles = {
-    primary: 'bg-ink text-plane hover:opacity-90',
-    quiet: 'border border-line bg-surface text-ink hover:bg-surface-2',
-    danger: 'border border-line bg-surface text-critical-ink hover:bg-surface-2',
+    primary: 'bg-ink text-plane shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_1px_2px_rgba(0,0,0,0.12)] hover:bg-ink/88',
+    quiet: 'bg-surface text-ink shadow-card hover:bg-surface-2',
+    ghost: 'text-ink-2 hover:bg-surface-2 hover:text-ink',
+    danger: 'bg-surface text-critical-ink shadow-card hover:bg-critical-soft',
   }[variant];
+  const sizes = { sm: 'h-8 gap-1.5 rounded-full px-3 text-[13px]', md: 'h-10 gap-2 rounded-xl px-4 text-sm' }[size];
   return (
     <button
       type="button"
       {...props}
-      className={`inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${styles} ${className}`}
+      className={`press inline-flex shrink-0 items-center justify-center font-medium disabled:cursor-not-allowed disabled:opacity-45 ${sizes} ${styles} ${className}`}
     >
       {children}
     </button>
@@ -108,7 +219,7 @@ export function Button({
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return (
     <label className="block text-sm">
-      <span className="mb-1 block text-[13px] text-ink-2">{label}</span>
+      <span className="mb-1.5 block text-[13px] font-medium text-ink-2">{label}</span>
       {children}
       {hint && <span className="mt-1 block text-xs text-muted">{hint}</span>}
     </label>
@@ -116,12 +227,12 @@ export function Field({ label, children, hint }: { label: string; children: Reac
 }
 
 export const inputClass =
-  'h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink placeholder:text-muted focus:border-series-1 focus:outline-none';
+  'h-10 w-full rounded-xl border border-line bg-surface px-3 text-sm text-ink shadow-[0_1px_2px_rgba(32,28,16,0.03)] transition-[border-color,box-shadow] duration-150 placeholder:text-muted hover:border-baseline focus:border-series-1 focus:shadow-[0_0_0_3px_var(--focus)] focus:outline-none';
 
 export function ErrorNote({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <p role="alert" className="flex items-start gap-2 rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-ink">
+    <p role="alert" className="flex items-start gap-2 rounded-xl bg-critical-soft px-3.5 py-2.5 text-sm text-ink">
       <StatusIcon level="critical" className="mt-0.5 size-4" />
       {message}
     </p>
@@ -151,8 +262,8 @@ export function Skeleton({ className = '' }: { className?: string }) {
 /** A card-shaped skeleton: a title line and some rows. */
 export function SkeletonCard({ rows = 3, tall = false }: { rows?: number; tall?: boolean }) {
   return (
-    <section className="rounded-xl border border-line bg-surface p-4 sm:p-5">
-      <Skeleton className="h-3.5 w-28" />
+    <section className="rounded-2xl bg-surface p-5 shadow-card sm:p-6">
+      <Skeleton className="h-4 w-28" />
       {tall && <Skeleton className="mt-4 h-12 w-40" />}
       {tall && <Skeleton className="mt-5 h-40 w-full" />}
       <div className="mt-4 space-y-3">
@@ -177,7 +288,10 @@ export function Loading({ variant = 'page' }: { variant?: 'page' | 'inline' }) {
   }
   return (
     <div className="space-y-4" role="status" aria-label="Loading">
-      <Skeleton className="h-6 w-44" />
+      <div className="pb-1 pt-2">
+        <Skeleton className="h-3.5 w-24" />
+        <Skeleton className="mt-2 h-8 w-52" />
+      </div>
       <SkeletonCard tall rows={2} />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <SkeletonCard rows={4} />

@@ -146,6 +146,13 @@ h3 {
     var(--surface);
 }
 
+/* Sign-in: the accent glows softly behind the card. */
+.login-bg {
+  background:
+    radial-gradient(60% 45% at 50% 20%, var(--hero-glow), transparent 70%),
+    var(--plane);
+}
+
 /* Pressable things settle down a pixel, like a real button. */
 .press {
   transition:

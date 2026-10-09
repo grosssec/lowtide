@@ -1,13 +1,13 @@
 import type { CategorySpending } from '../../shared/plan/dashboard.ts';
 import { money, shortDate } from '../lib/format.ts';
-import { StatusIcon } from './ui.tsx';
+import { Empty, StatusIcon } from './ui.tsx';
 
 /** A budget bar fills as the month's spending grows: amber close to the limit, red over it. */
 function Meter({ share, tone }: { share: number; tone: 'normal' | 'near' | 'over' | 'done' }) {
   const color = { normal: 'bg-series-1', near: 'bg-warning', over: 'bg-critical', done: 'bg-good' }[tone];
   return (
-    <div className="mt-1.5 h-2 rounded-full bg-surface-2" aria-hidden="true">
-      <div className={`h-2 rounded-full ${color}`} style={{ width: `${Math.min(1, Math.max(0, share)) * 100}%` }} />
+    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">
+      <div className={`grow-x h-1.5 rounded-full ${color}`} style={{ width: `${Math.min(1, Math.max(0, share)) * 100}%` }} />
     </div>
   );
 }
@@ -15,8 +15,8 @@ function Meter({ share, tone }: { share: number; tone: 'normal' | 'near' | 'over
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="mb-2 text-xs font-medium text-muted">{title}</h3>
-      <ul className="space-y-3">{children}</ul>
+      <h3 className="mb-3 text-xs font-medium text-muted">{title}</h3>
+      <ul className="space-y-4">{children}</ul>
     </div>
   );
 }
@@ -29,10 +29,10 @@ export function BudgetList({ rows }: { rows: CategorySpending[] }) {
   const bills = rows.filter((r) => r.kind === 'bill');
   const budgets = rows.filter((r) => r.kind === 'budget');
   const other = rows.filter((r) => r.kind === 'other' && r.amount > 0);
-  if (!bills.length && !budgets.length && !other.length) return <p className="text-sm text-muted">No spending yet this month.</p>;
+  if (!bills.length && !budgets.length && !other.length) return <Empty title="No spending yet this month">Imports, bank alerts and cash entries show up here.</Empty>;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {budgets.length > 0 && (
         <Group title="Day to day">
           {budgets.map((row) => {

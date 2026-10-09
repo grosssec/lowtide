@@ -1,4 +1,4 @@
-import { Card, ErrorNote, Loading } from '../components/ui.tsx';
+import { Card, ErrorNote, Loading, PageHeader } from '../components/ui.tsx';
 import { useApi } from '../lib/useApi.ts';
 import { BalancesCard, NotificationsCard, SyncCard } from './settings/account.tsx';
 import type { SettingsData } from './settings/fields.tsx';
@@ -10,8 +10,8 @@ export function SettingsPage() {
   const { data, error, reload } = useApi<SettingsData>('/settings');
   if (!data) return error ? <ErrorNote message={error} /> : <Loading />;
   return (
-    <div className="space-y-4">
-      <h1 className="text-lg font-semibold tracking-tight">Settings</h1>
+    <div className="stagger space-y-4">
+      <PageHeader eyebrow="Balances, plan, sync and security" title="Settings" />
       <BalancesCard key={`balances-${JSON.stringify(data.balances)}`} balances={data.balances} actuals={data.actuals} onSaved={reload} />
       <NotificationsCard push={data.push} onChanged={reload} />
       <SyncCard sync={data.sync} jobs={data.plan.jobs} />
@@ -27,9 +27,9 @@ export function SettingsPage() {
       <SecurityCard />
       {data.imports.length > 0 && (
         <Card title="Recent imports">
-          <ul className="divide-y divide-line text-sm">
+          <ul className="-my-1 divide-y divide-line text-sm">
             {data.imports.map((imp) => (
-              <li key={`${imp.file}-${imp.created_at}`} className="py-2">
+              <li key={`${imp.file}-${imp.created_at}`} className="py-2.5">
                 <div className="truncate text-ink">{imp.file}</div>
                 <div className="text-xs text-muted">
                   {imp.note} · {imp.added} new · {imp.created_at.slice(0, 16)}

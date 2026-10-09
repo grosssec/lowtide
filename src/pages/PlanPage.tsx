@@ -3,7 +3,7 @@ import type { Actuals, PlanConfig } from '../../shared/plan/config.ts';
 import { buildYearPlan, type GoalStatus } from '../../shared/plan/year.ts';
 import { MonthLines } from '../components/charts.tsx';
 import type { Tab } from '../components/Shell.tsx';
-import { Button, Card, ErrorNote, Loading, StatusIcon } from '../components/ui.tsx';
+import { Button, Card, Chevron, Chip, Empty, ErrorNote, Loading, PageHeader } from '../components/ui.tsx';
 import { money, monthLabel, monthShort, shortDate } from '../lib/format.ts';
 import { useApi } from '../lib/useApi.ts';
 
@@ -14,29 +14,29 @@ function GoalRow({ goal, today }: { goal: GoalStatus; today: string }) {
   const projectedShare = Math.min(1, goal.projected / goal.target);
   const when = goal.hasDate ? `by ${longDate(goal.date, today)}` : 'no date';
   return (
-    <li>
-      <div className="flex items-baseline justify-between gap-3 text-sm">
-        <span className="truncate font-medium text-ink">{goal.name}</span>
-        <span className="num shrink-0 text-ink-2">
-          {money(goal.target)} <span className="text-muted">{when}</span>
-        </span>
+    <li className="rounded-xl bg-surface-2/60 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="truncate text-[15px] font-semibold text-ink">{goal.name}</div>
+          <div className="num mt-0.5 text-xs text-muted">
+            {money(goal.target)} {when}
+          </div>
+        </div>
+        <Chip tone={goal.reached ? 'good' : 'warning'}>{goal.reached ? 'On track' : `${money(goal.shortBy)} short`}</Chip>
       </div>
-      <div className="relative mt-2 h-2.5 rounded-full bg-surface-2" aria-hidden="true">
-        <div className="absolute inset-y-0 left-0 rounded-full bg-series-1-soft" style={{ width: `${projectedShare * 100}%` }} />
-        <div className="absolute inset-y-0 left-0 rounded-full bg-series-1" style={{ width: `${nowShare * 100}%` }} />
+      <div className="relative mt-4 h-2 overflow-hidden rounded-full bg-surface-3" aria-hidden="true">
+        <div className="grow-x absolute inset-y-0 left-0 rounded-full bg-series-1-soft" style={{ width: `${projectedShare * 100}%` }} />
+        <div className="grow-x absolute inset-y-0 left-0 rounded-full bg-series-1" style={{ width: `${nowShare * 100}%` }} />
       </div>
-      <div className="mt-1.5 flex flex-wrap justify-between gap-x-4 gap-y-1 text-xs text-muted">
+      <div className="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-1 text-xs text-muted">
         <span>
-          Now <span className="num text-ink">{money(goal.now)}</span>
+          Now <span className="num font-medium text-ink">{money(goal.now)}</span> · {Math.round(nowShare * 100)}%
         </span>
         <span>
-          {goal.hasDate ? `On ${longDate(goal.date, today)}` : 'In 12 months'}: <span className="num text-ink">{money(goal.projected)}</span>
+          {goal.hasDate ? `On ${longDate(goal.date, today)}` : 'In 12 months'}: <span className="num font-medium text-ink">{money(goal.projected)}</span>
         </span>
       </div>
-      <p className="mt-1.5 flex items-center gap-2 text-sm text-ink">
-        <StatusIcon level={goal.reached ? 'good' : 'warning'} />
-        {goal.reached ? 'On track with the forecast' : `${money(goal.shortBy)} short · save ≈ ${money(goal.perMonth)} more a month to make it`}
-      </p>
+      {!goal.reached && <p className="mt-3 text-[13px] text-ink-2">Save about {money(goal.perMonth)} more a month to make it.</p>}
     </li>
   );
 }
@@ -51,33 +51,29 @@ export function PlanPage({ onGo }: { onGo: (tab: Tab) => void }) {
   const months = data.months.map((m) => m.month);
   const floor = months.map((m) => (`${m}-31` >= data.reserve.from ? data.reserve.amount : null));
   const reserve = money(data.reserve.amount);
-  const toggle = 'h-7 rounded-md px-2.5 text-xs font-medium transition';
+  const toggle = 'press h-7 rounded-full px-3 text-xs font-medium';
   const edit = (
-    <Button variant="quiet" className="h-7 px-2.5 text-xs" onClick={() => onGo('settings')}>
-      Edit
+    <Button variant="ghost" size="sm" className="-mr-2" onClick={() => onGo('settings')}>
+      Edit <Chevron className="size-3.5" />
     </Button>
   );
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight">
-          Next 12 months <span className="font-normal text-muted">· until {monthLabel(months[months.length - 1])}</span>
-        </h1>
-        <p className="mt-1 text-sm text-ink-2">
-          One forecast from today&apos;s total of {money(inputs.actuals.net)} (bank + cash − card, the {reserve} reserve included). It updates itself as
-          transactions and hours come in.
-        </p>
-      </div>
+    <div className="stagger space-y-4">
+      <PageHeader eyebrow={`Plan · until ${monthLabel(months[months.length - 1])}`} title="Next 12 months" />
 
-      <Card title="Balance at the end of each month">
+      <Card hero title="Balance at the end of each month">
+        <p className="-mt-2 mb-5 max-w-2xl text-sm text-ink-2">
+          One forecast from today&apos;s total of <span className="num font-medium text-ink">{money(inputs.actuals.net)}</span> (bank + cash − card, the{' '}
+          {reserve} reserve included). It updates itself as transactions and hours come in.
+        </p>
         <MonthLines months={months.map(monthShort)} series={[{ label: 'Forecast', color: 'var(--series-1)', values: data.months.map((m) => m.endBalance) }]} floor={floor} />
       </Card>
 
       <Card
         title="Month by month"
         action={
-          <div className="flex rounded-lg border border-line p-0.5" role="group" aria-label="Show">
+          <div className="flex rounded-full bg-surface-2 p-0.5" role="group" aria-label="Show">
             {(
               [
                 ['total', 'Total'],
@@ -89,7 +85,7 @@ export function PlanPage({ onGo }: { onGo: (tab: Tab) => void }) {
                 type="button"
                 aria-pressed={view === key}
                 onClick={() => setView(key)}
-                className={`${toggle} ${view === key ? 'bg-surface-2 text-ink' : 'text-muted hover:text-ink'}`}
+                className={`${toggle} ${view === key ? 'bg-surface text-ink shadow-card' : 'text-muted hover:text-ink'}`}
               >
                 {label}
               </button>
@@ -99,12 +95,12 @@ export function PlanPage({ onGo }: { onGo: (tab: Tab) => void }) {
       >
         <table className="num w-full text-sm">
           <thead>
-            <tr className="text-left text-xs text-muted">
-              <th className="py-1.5 font-normal">Month</th>
-              <th className="hidden py-1.5 text-right font-normal sm:table-cell">In</th>
-              <th className="hidden py-1.5 text-right font-normal sm:table-cell">Out</th>
-              <th className="py-1.5 text-right font-normal">Result</th>
-              <th className="py-1.5 text-right font-normal">{view === 'total' ? 'Balance' : 'Above reserve'}</th>
+            <tr className="border-b border-line text-left text-xs text-muted">
+              <th className="pb-2.5 font-medium">Month</th>
+              <th className="hidden pb-2.5 text-right font-medium sm:table-cell">In</th>
+              <th className="hidden pb-2.5 text-right font-medium sm:table-cell">Out</th>
+              <th className="pb-2.5 text-right font-medium">Result</th>
+              <th className="pb-2.5 text-right font-medium">{view === 'total' ? 'Balance' : 'Above reserve'}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -112,12 +108,12 @@ export function PlanPage({ onGo }: { onGo: (tab: Tab) => void }) {
               const belowReserve = floor[i] !== null && row.endBalance < (floor[i] ?? 0);
               const shown = view === 'free' ? row.endBalance - (floor[i] ?? 0) : row.endBalance;
               return (
-                <tr key={row.month}>
-                  <td className="py-2 text-ink-2">{monthShort(row.month)}</td>
-                  <td className="hidden py-2 text-right text-ink-2 sm:table-cell">{money(row.income)}</td>
-                  <td className="hidden py-2 text-right text-ink-2 sm:table-cell">{money(row.spending)}</td>
-                  <td className={`py-2 text-right ${row.result < 0 ? 'text-critical-ink' : 'text-ink-2'}`}>{money(row.result, { sign: true })}</td>
-                  <td className="py-2 text-right text-ink">
+                <tr key={row.month} className="transition-colors hover:bg-surface-2/60">
+                  <td className="py-2.5 font-medium text-ink">{monthShort(row.month)}</td>
+                  <td className="hidden py-2.5 text-right text-ink-2 sm:table-cell">{money(row.income)}</td>
+                  <td className="hidden py-2.5 text-right text-ink-2 sm:table-cell">{money(row.spending)}</td>
+                  <td className={`py-2.5 text-right ${row.result < 0 ? 'text-critical-ink' : 'text-good-ink'}`}>{money(row.result, { sign: true })}</td>
+                  <td className="py-2.5 text-right font-semibold text-ink">
                     {money(shown)}
                     {belowReserve && <span className="sr-only"> (below the reserve)</span>}
                     {belowReserve && (
@@ -131,7 +127,7 @@ export function PlanPage({ onGo }: { onGo: (tab: Tab) => void }) {
             })}
           </tbody>
         </table>
-        <p className="mt-2 text-xs text-muted">
+        <p className="mt-3 text-xs text-muted">
           {view === 'total'
             ? `Total at the end of each month (bank + cash − card), the ${reserve} reserve included.`
             : `What is left at the end of each month after setting the ${reserve} reserve aside (from ${shortDate(data.reserve.from)}).`}{' '}
@@ -142,7 +138,7 @@ export function PlanPage({ onGo }: { onGo: (tab: Tab) => void }) {
       <Card title="Goals" action={edit}>
         {data.goals.length ? (
           <>
-            <ul className="space-y-5">
+            <ul className="space-y-3">
               {data.goals.map((goal) => (
                 <GoalRow key={goal.id} goal={goal} today={data.today} />
               ))}
@@ -153,22 +149,22 @@ export function PlanPage({ onGo }: { onGo: (tab: Tab) => void }) {
             </p>
           </>
         ) : (
-          <p className="text-sm text-muted">No goals yet. Add one in Settings, with or without a date.</p>
+          <Empty title="No goals yet">Add one in Settings, with or without a date.</Empty>
         )}
       </Card>
 
       {data.trips.length > 0 && (
         <Card title="Room to spend on trips">
-          <ul className="divide-y divide-line text-sm">
+          <ul className="-my-1 divide-y divide-line text-sm">
             {data.trips.map((trip) => (
-              <li key={`${trip.label}-${trip.start}`} className="flex items-baseline justify-between gap-3 py-2">
+              <li key={`${trip.label}-${trip.start}`} className="flex items-baseline justify-between gap-3 py-3">
                 <span className="min-w-0">
                   <span className="text-ink">{trip.label}</span>{' '}
                   <span className="text-xs text-muted">
                     {shortDate(trip.start)} – {shortDate(trip.end)}
                   </span>
                 </span>
-                <span className="num shrink-0 font-medium text-ink">{money(trip.room)}</span>
+                <span className="num shrink-0 text-[15px] font-semibold text-ink">{money(trip.room)}</span>
               </li>
             ))}
           </ul>
@@ -177,17 +173,23 @@ export function PlanPage({ onGo }: { onGo: (tab: Tab) => void }) {
       )}
 
       <Card title="What the forecast assumes" action={edit}>
-        <ul className="list-disc space-y-1.5 pl-5 text-sm text-ink-2">
+        <ul className="space-y-2.5 text-sm text-ink-2">
           {data.assumptions.map((item) => (
-            <li key={item}>{item}</li>
+            <li key={item} className="flex gap-2.5">
+              <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-series-1" aria-hidden="true" />
+              {item}
+            </li>
           ))}
         </ul>
         {data.notes.length > 0 && (
           <>
-            <h3 className="mb-1.5 mt-4 text-xs font-medium text-muted">Your notes</h3>
-            <ul className="list-disc space-y-1.5 pl-5 text-sm text-ink-2">
+            <h3 className="mb-2.5 mt-5 border-t border-line pt-4 text-xs font-medium text-muted">Your notes</h3>
+            <ul className="space-y-2.5 text-sm text-ink-2">
               {data.notes.map((item) => (
-                <li key={item}>{item}</li>
+                <li key={item} className="flex gap-2.5">
+                  <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-baseline" aria-hidden="true" />
+                  {item}
+                </li>
               ))}
             </ul>
           </>

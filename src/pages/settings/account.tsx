@@ -29,7 +29,7 @@ export function BalancesCard({ balances, actuals, onSaved }: { balances: Balance
   }
   return (
     <Card title="Balances">
-      <p className="mb-3 text-sm text-ink-2">
+      <p className="-mt-1 mb-5 max-w-2xl text-sm text-ink-2">
         Type what the apps show and the day you looked. Everything after that day is added by itself (bank alerts, imports, cash entries); a balance alert from
         the bank also updates these.
       </p>
@@ -208,7 +208,7 @@ export function SyncCard({ sync, jobs }: { sync: SettingsData['sync']; jobs: Pla
         <p className="mt-2 text-xs text-muted">Setup steps: apps-script/README.md in the project.</p>
       </details>
       <div className="mt-3">
-        <Button variant="quiet" className="h-8 px-3 text-xs" onClick={() => setOpen((o) => !o)}>
+        <Button variant="quiet" size="sm" onClick={() => setOpen((o) => !o)}>
           {open ? 'Hide received alerts' : 'Show received alerts'}
         </Button>
       </div>

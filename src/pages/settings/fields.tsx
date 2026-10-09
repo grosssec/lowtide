@@ -32,19 +32,24 @@ export function MoneyField({ label, cents, onChange, hint }: { label: string; ce
   }
   return (
     <Field label={label} hint={hint}>
-      <input
-        className={`${inputClass} num`}
-        inputMode="decimal"
-        value={text}
-        onChange={(e) => {
-          setText(e.target.value);
-          const parsed = parseMoneyInput(e.target.value);
-          if (parsed !== null) {
-            setShown(parsed);
-            onChange(parsed);
-          }
-        }}
-      />
+      <span className="relative block">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted" aria-hidden="true">
+          $
+        </span>
+        <input
+          className={`${inputClass} num pl-6`}
+          inputMode="decimal"
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value);
+            const parsed = parseMoneyInput(e.target.value);
+            if (parsed !== null) {
+              setShown(parsed);
+              onChange(parsed);
+            }
+          }}
+        />
+      </span>
     </Field>
   );
 }

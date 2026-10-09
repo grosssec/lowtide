@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 export type Tab = 'month' | 'plan' | 'transactions' | 'settings';
 
@@ -27,7 +27,7 @@ function Icon({ tab }: { tab: Tab }) {
 
 export function Logo() {
   return (
-    <svg viewBox="0 0 32 32" className="size-7" aria-hidden="true">
+    <svg viewBox="0 0 32 32" className="size-8" aria-hidden="true">
       <rect width="32" height="32" rx="8" fill="var(--ink)" />
       <path d="M8 22.5V17m5.4 5.5V12m5.3 10.5v-7" stroke="var(--plane)" strokeWidth="2.6" strokeLinecap="round" />
       <path d="M24 22.5V9.5" stroke="var(--series-1)" strokeWidth="2.6" strokeLinecap="round" />
@@ -35,43 +35,63 @@ export function Logo() {
   );
 }
 
-export function Shell({ tab, onTab, children }: { tab: Tab; onTab: (tab: Tab) => void; children: ReactNode }) {
+/** True once the page has scrolled a little: the header then gets its glass background. */
+function useScrolled(): boolean {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  return scrolled;
+}
+
+export function Shell({ tab, onTab, children, banner }: { tab: Tab; onTab: (tab: Tab) => void; children: ReactNode; banner?: ReactNode }) {
+  const scrolled = useScrolled();
   return (
-    <div className="mx-auto min-h-dvh max-w-5xl px-4 pb-28 pt-[max(env(safe-area-inset-top),12px)] sm:px-6 sm:pb-12">
-      <header className="flex items-center justify-between py-3">
-        <div className="flex items-center gap-2.5">
-          <Logo />
-          <span className="text-[15px] font-semibold tracking-tight">Finance</span>
+    <div className="min-h-dvh">
+      <header
+        className={`sticky top-0 z-30 pt-[env(safe-area-inset-top)] transition-[background-color,box-shadow] duration-200 ${
+          scrolled ? 'bg-plane/80 shadow-[0_1px_0_var(--line)] backdrop-blur-xl backdrop-saturate-150' : 'bg-transparent'
+        }`}
+      >
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:h-16 sm:px-6">
+          <button type="button" onClick={() => onTab('month')} className="press flex items-center gap-2.5 rounded-lg" aria-label="Finance, go to Month">
+            <Logo />
+            <span className="text-[15px] font-semibold tracking-[-0.01em]">Finance</span>
+          </button>
+          <nav aria-label="Sections" className="hidden rounded-full bg-surface-2 p-1 shadow-[inset_0_0_0_1px_var(--ring)] sm:flex">
+            {TABS.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => onTab(t)}
+                aria-current={t === tab ? 'page' : undefined}
+                className={`press h-8 rounded-full px-4 text-[13px] font-medium ${t === tab ? 'bg-surface text-ink shadow-card' : 'text-ink-2 hover:text-ink'}`}
+              >
+                {LABELS[t]}
+              </button>
+            ))}
+          </nav>
         </div>
-        <nav aria-label="Sections" className="hidden gap-1 sm:flex">
-          {TABS.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => onTab(t)}
-              aria-current={t === tab ? 'page' : undefined}
-              className={`rounded-lg px-3 py-1.5 text-sm transition ${t === tab ? 'bg-surface-2 font-medium text-ink' : 'text-ink-2 hover:text-ink'}`}
-            >
-              {LABELS[t]}
-            </button>
-          ))}
-        </nav>
       </header>
-      <main className="fade-in" key={tab}>
+      {banner}
+      <main className="stagger-host mx-auto max-w-5xl px-4 pb-32 pt-1 sm:px-6 sm:pb-16" key={tab}>
         {children}
       </main>
       <nav
         aria-label="Sections"
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
+        className="fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),12px)] z-30 mx-auto max-w-md rounded-[26px] bg-surface/80 p-1.5 shadow-pop backdrop-blur-xl backdrop-saturate-150 sm:hidden"
       >
-        <div className="mx-auto grid max-w-md grid-cols-4">
+        <div className="grid grid-cols-4 gap-1">
           {TABS.map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => onTab(t)}
               aria-current={t === tab ? 'page' : undefined}
-              className={`flex flex-col items-center gap-1 py-2.5 text-[11px] ${t === tab ? 'text-ink' : 'text-muted'}`}
+              className={`press flex flex-col items-center gap-0.5 rounded-[20px] py-2 text-[11px] font-medium ${t === tab ? 'bg-surface-2 text-ink' : 'text-muted'}`}
             >
               <Icon tab={t} />
               {LABELS[t]}

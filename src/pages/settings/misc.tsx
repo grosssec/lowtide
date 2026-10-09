@@ -32,7 +32,7 @@ export function RulesCard({ rules, onChanged }: { rules: SettingsData['rules']; 
             <li key={rule.id} className="flex items-center justify-between gap-3 py-2">
               <span className="min-w-0 truncate">
                 <span className="font-mono text-xs text-ink-2">{ruleLabel(rule.match)}</span>
-                {rule.sign && <span className="ml-1.5 rounded border border-line px-1 text-[11px] text-muted">{rule.sign === 'in' ? 'money in' : 'money out'}</span>} →{' '}
+                {rule.sign && <span className="ml-1.5 rounded-full bg-surface-2 px-2 py-0.5 text-[11px] text-muted">{rule.sign === 'in' ? 'money in' : 'money out'}</span>} →{' '}
                 {rule.category}
               </span>
               <button type="button" className="text-muted hover:text-critical-ink" onClick={() => remove(rule.id)} aria-label={`Delete rule ${rule.match}`}>
@@ -62,12 +62,12 @@ export function AdvancedCard({ plan, onSaved }: { plan: PlanConfig; onSaved: () 
     }
   }
   return (
-    <Card title="Advanced: full plan" action={<Button variant="quiet" className="h-8 px-3 text-xs" onClick={() => setOpen((o) => !o)}>{open ? 'Hide' : 'Show'}</Button>}>
+    <Card title="Advanced: full plan" action={<Button variant="quiet" size="sm" onClick={() => setOpen((o) => !o)}>{open ? 'Hide' : 'Show'}</Button>}>
       <p className="text-sm text-ink-2">Jobs, pay schedules, hours per scenario, budgets and checkpoints. Amounts are in cents.</p>
       {open && (
         <>
           <textarea
-            className="mt-3 h-96 w-full rounded-lg border border-line bg-surface-2 p-3 font-mono text-xs text-ink"
+            className="mt-3 h-96 w-full rounded-xl border border-line bg-surface-2 p-3 font-mono text-xs text-ink"
             spellCheck={false}
             value={text}
             onChange={(e) => setText(e.target.value)}

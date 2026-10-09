@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { money, shortDate } from '../lib/format.ts';
+import { Empty } from './ui.tsx';
 
 function useWidth<T extends HTMLElement>() {
   const ref = useRef<T>(null);
@@ -31,7 +32,7 @@ function Tooltip({ x, width, children }: { x: number; width: number; children: R
   const left = Math.min(Math.max(x - 80, 0), Math.max(0, width - 160));
   return (
     <div
-      className="pointer-events-none absolute top-1 z-10 w-40 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs shadow-sm"
+      className="pointer-events-none absolute top-1 z-10 w-40 rounded-xl bg-surface px-3 py-2 text-xs shadow-pop"
       style={{ left }}
     >
       {children}
@@ -64,8 +65,8 @@ export function Runway({
   const [hover, setHover] = useState<number | null>(null);
   if (points.length < 2) return null;
 
-  const height = 176;
-  const axis = 22;
+  const height = 200;
+  const axis = 24;
   const gutter = 46;
   const plotW = Math.max(1, width - gutter - 8);
   const plotH = height - axis - 12;
@@ -76,6 +77,7 @@ export function Runway({
   const x = (i: number) => gutter + (i / (points.length - 1)) * plotW;
   const y = (v: number) => 12 + (1 - (v - yMin) / Math.max(1, yMax - yMin)) * plotH;
   const line = points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.balance).toFixed(1)}`).join('');
+  const area = `${line}L${x(points.length - 1).toFixed(1)},${(12 + plotH).toFixed(1)}L${gutter},${(12 + plotH).toFixed(1)}Z`;
   // Where the reserve starts counting, as a position on the chart (before the first day → 0, after the last → the end).
   const reserveStart = reserve ? points.findIndex((p) => p.date >= reserve.from) : -1;
   const startX = reserveStart < 0 ? gutter + plotW : x(reserveStart);
@@ -105,7 +107,15 @@ export function Runway({
         >
           {ticks.map((t) => (
             <g key={t}>
-              <line x1={gutter} x2={gutter + plotW} y1={y(t)} y2={y(t)} stroke={t === 0 ? 'var(--baseline)' : 'var(--line)'} strokeWidth={1} />
+              <line
+                x1={gutter}
+                x2={gutter + plotW}
+                y1={y(t)}
+                y2={y(t)}
+                stroke={t === 0 ? 'var(--baseline)' : 'var(--line)'}
+                strokeWidth={1}
+                strokeDasharray={t === 0 ? undefined : '2 4'}
+              />
               <text x={gutter - 8} y={y(t) + 4} textAnchor="end" className="num fill-muted text-[11px]">
                 {money(t)}
               </text>
@@ -126,19 +136,41 @@ export function Runway({
               )}
             </g>
           )}
-          <path d={line} fill="none" stroke="var(--series-1)" strokeWidth={2} strokeLinejoin="round" />
+          <defs>
+            <linearGradient id="runway-fill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="var(--series-1)" stopOpacity={0.2} />
+              <stop offset="100%" stopColor="var(--series-1)" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <path d={area} fill="url(#runway-fill)" className="fade-late" />
+          <path d={line} pathLength={1} fill="none" stroke="var(--series-1)" strokeWidth={2.25} strokeLinejoin="round" strokeLinecap="round" className="draw" />
           {paydays.map((date) => {
             const i = points.findIndex((p) => p.date === date);
             if (i < 0) return null;
             return <path key={date} d={`M${x(i) - 4},${height - axis + 6}l4,-6l4,6z`} fill="var(--series-1)" opacity={0.85} />;
           })}
           {lowIndex >= 0 && (
-            <circle cx={x(lowIndex)} cy={y(points[lowIndex].balance)} r={4.5} fill="var(--series-1)" stroke="var(--surface)" strokeWidth={2} />
+            <g className="fade-late">
+              <circle cx={x(lowIndex)} cy={y(points[lowIndex].balance)} r={9} fill="var(--series-1)" opacity={0.14} />
+              <circle cx={x(lowIndex)} cy={y(points[lowIndex].balance)} r={4.5} fill="var(--series-1)" stroke="var(--surface)" strokeWidth={2} />
+              <text
+                x={Math.min(Math.max(x(lowIndex), gutter + 20), gutter + plotW - 20)}
+                y={y(points[lowIndex].balance) + (y(points[lowIndex].balance) > 12 + plotH - 20 ? -14 : 20)}
+                textAnchor="middle"
+                className="num fill-ink text-[11px] font-semibold"
+                stroke="var(--surface)"
+                strokeWidth={4}
+                strokeLinejoin="round"
+                paintOrder="stroke"
+              >
+                Low {money(points[lowIndex].balance)}
+              </text>
+            </g>
           )}
           {hover !== null && hovered && (
             <g>
-              <line x1={x(hover)} x2={x(hover)} y1={12} y2={12 + plotH} stroke="var(--baseline)" strokeWidth={1} />
-              <circle cx={x(hover)} cy={y(hovered.balance)} r={4} fill="var(--series-1)" stroke="var(--surface)" strokeWidth={2} />
+              <line x1={x(hover)} x2={x(hover)} y1={12} y2={12 + plotH} stroke="var(--baseline)" strokeWidth={1} strokeDasharray="3 3" />
+              <circle cx={x(hover)} cy={y(hovered.balance)} r={5} fill="var(--series-1)" stroke="var(--surface)" strokeWidth={2.5} />
             </g>
           )}
         </svg>
@@ -150,9 +182,9 @@ export function Runway({
           {reserve && hovered.date >= reserve.from && <div className="text-muted">reserve {money(reserve.amount)}</div>}
         </Tooltip>
       )}
-      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-0.5 w-4 rounded bg-series-1" /> Balance (bank + cash − card)
+          <span className="h-[2.5px] w-4 rounded bg-series-1" /> Balance (bank + cash − card)
         </span>
         {reserve && reserve.amount > 0 && (
           <span className="inline-flex items-center gap-1.5">
@@ -215,7 +247,7 @@ export function MonthLines({ months, series, floor }: { months: string[]; series
         <svg width={width} height={height} role="img" aria-label="Balance at the end of each month" onPointerMove={onPointer} onPointerLeave={() => setHover(null)} className="touch-pan-y">
           {ticks.map((t) => (
             <g key={t}>
-              <line x1={gutter} x2={gutter + plotW} y1={y(t)} y2={y(t)} stroke={t === 0 ? 'var(--baseline)' : 'var(--line)'} />
+              <line x1={gutter} x2={gutter + plotW} y1={y(t)} y2={y(t)} stroke={t === 0 ? 'var(--baseline)' : 'var(--line)'} strokeDasharray={t === 0 ? undefined : '2 4'} />
               <text x={gutter - 8} y={y(t) + 4} textAnchor="end" className="num fill-muted text-[11px]">
                 {money(t)}
               </text>
@@ -235,13 +267,26 @@ export function MonthLines({ months, series, floor }: { months: string[]; series
             ) : null,
           )}
           {floorPath && <path d={floorPath} fill="none" stroke="var(--ink-2)" strokeWidth={1.5} strokeDasharray="4 4" />}
+          <defs>
+            <linearGradient id="months-fill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="var(--series-1)" stopOpacity={0.18} />
+              <stop offset="100%" stopColor="var(--series-1)" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          {series.length === 1 && (
+            <path
+              d={`${path(series[0].values)}L${x(series[0].values.length - 1).toFixed(1)},${(14 + plotH).toFixed(1)}L${x(0).toFixed(1)},${(14 + plotH).toFixed(1)}Z`}
+              fill="url(#months-fill)"
+              className="fade-late"
+            />
+          )}
           {series.map((s) => (
-            <path key={s.label} d={path(s.values)} fill="none" stroke={s.color} strokeWidth={2} strokeLinejoin="round" />
+            <path key={s.label} d={path(s.values)} pathLength={1} fill="none" stroke={s.color} strokeWidth={2.25} strokeLinejoin="round" strokeLinecap="round" className="draw" />
           ))}
           {series.map((s) => (
             <circle key={`${s.label}-end`} cx={x(s.values.length - 1)} cy={y(s.values[s.values.length - 1])} r={4} fill={s.color} stroke="var(--surface)" strokeWidth={2} />
           ))}
-          {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={14} y2={14 + plotH} stroke="var(--baseline)" />}
+          {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={14} y2={14 + plotH} stroke="var(--baseline)" strokeDasharray="3 3" />}
           {hover !== null &&
             series.map((s) => <circle key={`${s.label}-h`} cx={x(hover)} cy={y(s.values[hover])} r={4} fill={s.color} stroke="var(--surface)" strokeWidth={2} />)}
         </svg>
@@ -283,7 +328,7 @@ export interface BarRow {
 /** One hue for every bar; a budget shows as a tick on the track, overspend gets an icon and words. */
 export function BarList({ rows, empty = 'Nothing yet' }: { rows: BarRow[]; empty?: string }) {
   const visible = rows.filter((r) => r.amount > 0 || (r.budget ?? 0) > 0);
-  if (!visible.length) return <p className="text-sm text-muted">{empty}</p>;
+  if (!visible.length) return <Empty title={empty} />;
   const max = Math.max(...visible.map((r) => Math.max(r.amount, r.budget ?? 0)));
   return (
     <ul className="space-y-3">
@@ -298,10 +343,10 @@ export function BarList({ rows, empty = 'Nothing yet' }: { rows: BarRow[]; empty
                 {row.budget ? <span className="text-muted"> / {money(row.budget)}</span> : null}
               </span>
             </div>
-            <div className="relative mt-1.5 h-2 rounded-full bg-surface-2">
-              <div className="h-2 rounded-full bg-series-1" style={{ width: `${(Math.min(row.amount, max) / max) * 100}%` }} />
+            <div className="relative mt-2 h-1.5 rounded-full bg-surface-2">
+              <div className="grow-x h-1.5 rounded-full bg-series-1" style={{ width: `${(Math.min(row.amount, max) / max) * 100}%` }} />
               {row.budget ? (
-                <span className="absolute -top-1 h-4 w-0.5 rounded bg-ink" style={{ left: `calc(${(row.budget / max) * 100}% - 1px)` }} title={`Budget ${money(row.budget)}`} />
+                <span className="absolute -top-1 h-3.5 w-0.5 rounded bg-ink" style={{ left: `calc(${(row.budget / max) * 100}% - 1px)` }} title={`Budget ${money(row.budget)}`} />
               ) : null}
             </div>
             {over > 0 && (
