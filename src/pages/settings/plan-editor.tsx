@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import type { PaidWith } from '../../../shared/engine/flows.ts';
 import type { AwayPeriod, Bill, Budget, Goal, JobConfig, Period, PlanConfig, PlannedEvent } from '../../../shared/plan/config.ts';
 import type { HoursBasis } from '../../../shared/plan/hours.ts';
-import { Button, Card, Chevron, CloseIcon, Field, inputClass, PlusIcon } from '../../components/ui.tsx';
+import { Button, Card, Chevron, CloseIcon, Field, inputClass, LabelSpace, PlusIcon } from '../../components/ui.tsx';
 import { api } from '../../lib/api.ts';
 import { money, todayISO } from '../../lib/format.ts';
 import { MoneyField, Saved } from './fields.tsx';
@@ -68,12 +68,21 @@ function NumberInput({
   );
 }
 
-function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
-  return (
-    <label className="flex min-h-10 items-center gap-2 text-sm text-ink-2">
-      <input type="checkbox" className="size-4 accent-[var(--series-1)]" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+/** A checkbox. `besideFields` drops it by a label's height so it sits level with the inputs next to it. */
+function Check({ label, checked, onChange, besideFields }: { label: string; checked: boolean; onChange: (checked: boolean) => void; besideFields?: boolean }) {
+  const box = (
+    <label className="flex min-h-10 cursor-pointer items-center gap-2.5 text-sm text-ink-2">
+      <input type="checkbox" className="size-[18px] shrink-0 accent-[var(--series-1)]" checked={checked} onChange={(e) => onChange(e.target.checked)} />
       {label}
     </label>
+  );
+  return besideFields ? (
+    <div>
+      <LabelSpace />
+      {box}
+    </div>
+  ) : (
+    box
   );
 }
 
@@ -120,7 +129,7 @@ function Row({ title, children, actions }: { title: string; children: ReactNode;
         <span className="truncate text-xs font-medium text-muted">{title}</span>
         <div className="flex shrink-0 gap-0.5">{actions}</div>
       </div>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-3 sm:grid-cols-4">{children}</div>
+      <div className="grid grid-cols-2 items-start gap-x-3 gap-y-3 sm:grid-cols-4">{children}</div>
     </li>
   );
 }
@@ -136,7 +145,7 @@ function AddButton({ children, onClick }: { children: ReactNode; onClick: () => 
 function MonthsOff({ value, onChange }: { value: number[]; onChange: (value: number[]) => void }) {
   return (
     <div className="col-span-2 sm:col-span-4">
-      <span className="mb-1.5 block text-[13px] font-medium text-ink-2">Skipped months</span>
+      <span className="mb-1.5 block text-[13px] font-medium leading-5 text-ink-2">Skipped months</span>
       <div className="grid grid-cols-6 gap-1 sm:grid-cols-12" role="group" aria-label="Skipped months">
         {MONTHS.map((name, i) => {
           const month = i + 1;
@@ -274,7 +283,7 @@ export function PlanEditor({
     <div className="space-y-4">
       {show('goals') && (
         <Card title="Reserve">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 items-start gap-3">
             <MoneyField
               label="Reserve"
               hint="Never counted as available"
@@ -322,7 +331,7 @@ export function PlanEditor({
           const basis = hoursBasis.find((h) => h.jobId === job.id);
           return (
             <Card key={job.id} title={job.name || 'Job'}>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-2 items-start gap-3 sm:grid-cols-4">
                 <div className="col-span-2 sm:col-span-1">
                   <TextInput label="Name" value={job.name} onChange={(name) => setItem('jobs', i, { name })} />
                 </div>
@@ -406,7 +415,7 @@ export function PlanEditor({
                     hint={lately !== undefined ? `Lately ≈ ${money(lately)} a month` : undefined}
                     onChange={(monthly) => setItem('budgets', i, { monthly })}
                   />
-                  <Check label="Less on trips" checked={Boolean(budget.lessOnTrips)} onChange={(less) => setItem('budgets', i, { lessOnTrips: less || undefined })} />
+                  <Check besideFields label="Less on trips" checked={Boolean(budget.lessOnTrips)} onChange={(less) => setItem('budgets', i, { lessOnTrips: less || undefined })} />
                 </Row>
               );
             })}

@@ -234,20 +234,23 @@ export function Button({
 }
 
 /**
- * A labeled control. In a grid row the fields stretch to the same height and the inputs line up at the bottom,
- * even when a neighbour's label wraps; a field with a hint keeps its input right under the label instead.
+ * A labeled control. One rule everywhere: the label stays on one line, the control sits right under it and any hint
+ * goes below the control, so fields side by side always line up (grids use items-start).
  */
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return (
-    <label className="flex h-full min-w-0 flex-col text-sm">
-      <span className="mb-1.5 block text-[13px] font-medium text-ink-2">{label}</span>
-      <span className={`block min-w-0 ${hint ? '' : 'mt-auto'}`}>
-        {children}
-        {hint && <span className="mt-1.5 block text-xs text-muted">{hint}</span>}
+    <label className="block min-w-0 text-sm">
+      <span className="mb-1.5 block truncate text-[13px] font-medium leading-5 text-ink-2" title={label}>
+        {label}
       </span>
+      {children}
+      {hint && <span className="mt-1.5 block text-xs text-muted">{hint}</span>}
     </label>
   );
 }
+
+/** Takes the height of a Field's label, so a checkbox or a value placed beside fields lines up with their controls. */
+export const LabelSpace = () => <span className="mb-1.5 block h-5" aria-hidden="true" />;
 
 export const inputClass =
   'h-10 w-full rounded-xl border border-line bg-surface px-3 text-sm text-ink shadow-[0_1px_2px_rgba(32,28,16,0.03)] transition-[border-color,box-shadow] duration-150 placeholder:text-muted hover:border-baseline focus:border-series-1 focus:shadow-[0_0_0_3px_var(--focus)] focus:outline-none';

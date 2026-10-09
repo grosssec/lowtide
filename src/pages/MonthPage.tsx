@@ -213,8 +213,8 @@ export function MonthPage({ onGo }: { onGo: (route: Route) => void }) {
             </div>
           </dl>
           {next.reserveGap !== null && (
-            <div className={`mt-4 flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm text-ink ${next.reserveGap > 0 ? 'bg-warning-soft' : 'bg-good-soft'}`}>
-              <StatusIcon level={next.reserveGap > 0 ? 'warning' : 'good'} />
+            <div className={`mt-4 flex items-start gap-2.5 rounded-xl px-3.5 py-2.5 text-sm text-ink ${next.reserveGap > 0 ? 'bg-warning-soft' : 'bg-good-soft'}`}>
+              <StatusIcon level={next.reserveGap > 0 ? 'warning' : 'good'} className="mt-0.5 size-4" />
               {next.reserveGap > 0 ? `Reserve ${money(next.reserveGap)} short on the tightest day` : 'Reserve stays intact'}
             </div>
           )}
