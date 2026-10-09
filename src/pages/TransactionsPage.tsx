@@ -276,7 +276,7 @@ export function TransactionsPage() {
                           <select
                             value={entry.category}
                             onChange={(e) => changeCategory(entry, e.target.value)}
-                            className="h-6 max-w-[11rem] truncate rounded-md border border-transparent bg-transparent pr-6 text-xs text-muted transition-colors hover:border-line hover:text-ink-2 focus:border-series-1"
+                            className="select-sm h-6 max-w-[11rem] truncate rounded-md border border-transparent bg-transparent pl-1 text-xs text-muted transition-colors hover:border-line hover:text-ink-2 focus:border-series-1"
                             aria-label={`Category for ${displayName(entry.description)}`}
                           >
                             {[...new Set([entry.category, ...data.categories])].map((c) => (
