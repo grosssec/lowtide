@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "preview": "npm run build && vite preview",
     "deploy": "npm run build && wrangler deploy",
+    "deploy:demo": "CLOUDFLARE_ENV=demo npm run build && wrangler deploy",
     "cf-typegen": "wrangler types",
     "test": "vitest run",
     "test:watch": "vitest",

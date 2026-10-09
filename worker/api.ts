@@ -6,7 +6,7 @@ import { buildDashboard, computeActuals, monthlyBudgets, weeklyHoursBasis, type 
 import type { AppEnv } from './auth.ts';
 import { deleteEntries, getEntry, getSetting, insertEntries, loadLedger, loadRules, putSetting, updateCategory, type Entry } from './db.ts';
 import { PUSH_HOSTS, sendDaily } from './notify.ts';
-import { loadPlan, loadState, todayIn } from './state.ts';
+import { appToday, loadPlan, loadState } from './state.ts';
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const MONTH = /^\d{4}-\d{2}$/;
@@ -145,7 +145,7 @@ export const api = new Hono<AppEnv>()
   .get('/transactions', async (c) => {
     const { plan } = await loadPlan(c.env.DB);
     const ledger = await loadLedger(c.env.DB);
-    const month = pickMonth(c.req.query('month'), todayIn(c.env.TIMEZONE));
+    const month = pickMonth(c.req.query('month'), appToday(c.env));
     const entries = ledger.filter((e) => monthKey(e.date) === month).reverse();
     return c.json({ month, entries, categories: categoryList(ledger, plan) });
   })
@@ -294,7 +294,7 @@ export const api = new Hono<AppEnv>()
     try {
       // The plan must compute before it is saved (the cheap dashboard pass; the full year plan runs in the browser).
       planShape.parse(plan);
-      const today = todayIn(c.env.TIMEZONE);
+      const today = appToday(c.env);
       buildDashboard({ month: monthKey(today), config: plan, actuals: computeActuals(balances, [], today), ledger: [] });
     } catch (error) {
       const reason =

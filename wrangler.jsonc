@@ -27,7 +27,9 @@
 	],
 	"vars": {
 		"APP_NAME": "Finance",
-		"TIMEZONE": "America/Chicago"
+		"TIMEZONE": "America/Chicago",
+		"DEMO": "0",
+		"DEMO_TODAY": ""
 	},
 	// Per-IP limits (per Cloudflare location): sign-in, the sync script, and everything else.
 	"ratelimits": [
@@ -42,7 +44,35 @@
 	"observability": {
 		"enabled": true
 	},
-	"upload_source_maps": true
+	"upload_source_maps": true,
+	// Public demo with made-up data: read-only, a frozen "today", no cron, its own database.
+	// Build and deploy with `npm run deploy:demo`.
+	"env": {
+		"demo": {
+			"routes": [{ "pattern": "demo.ricardogross.com", "custom_domain": true }],
+			"workers_dev": false,
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "finance-demo",
+					"database_id": "d05f1c9b-bf99-467e-a5ed-ce9f845bf3b2",
+					"migrations_dir": "migrations"
+				}
+			],
+			"vars": {
+				"APP_NAME": "Finance demo",
+				"TIMEZONE": "America/Chicago",
+				"DEMO": "1",
+				"DEMO_TODAY": "2026-10-08"
+			},
+			"ratelimits": [
+				{ "name": "AUTH_LIMIT", "namespace_id": "1011", "simple": { "limit": 10, "period": 60 } },
+				{ "name": "INGEST_LIMIT", "namespace_id": "1012", "simple": { "limit": 30, "period": 60 } },
+				{ "name": "API_LIMIT", "namespace_id": "1013", "simple": { "limit": 300, "period": 60 } }
+			],
+			"triggers": { "crons": [] }
+		}
+	}
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

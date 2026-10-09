@@ -32,6 +32,12 @@ app.use('/api/*', (c, next) =>
   ),
 );
 
+// The public demo is read-only: nothing is saved, synced or sent.
+app.use('/api/*', async (c, next) => {
+  if (c.env.DEMO === '1' && c.req.method !== 'GET') return c.json({ error: "This is a demo with made-up data: changes aren't saved" }, 403);
+  return next();
+});
+
 // The sync script authenticates with its own bearer token (worker/ingest.ts), never with the session cookie.
 const isIngest = (path: string) => path.startsWith('/api/ingest/');
 
@@ -84,6 +90,6 @@ export default {
   fetch: app.fetch,
   // Hourly Cron Trigger (wrangler.jsonc): the daily push.
   scheduled: async (_controller, env, ctx) => {
-    ctx.waitUntil(onSchedule(env));
+    if (env.DEMO !== '1') ctx.waitUntil(onSchedule(env));
   },
 } satisfies ExportedHandler<Env>;

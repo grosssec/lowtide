@@ -70,6 +70,8 @@ export async function logEvent(c: Context<AppEnv>, type: string, detail?: string
 /** The current session's id (the hash of its token), or null. */
 export async function sessionId(c: Context<AppEnv>): Promise<string | null> {
   if (c.env.DEV_AUTH_BYPASS === '1' && isLocalhost(c)) return 'dev';
+  // The public demo: everyone is "signed in", and every change is refused (worker/index.ts).
+  if (c.env.DEMO === '1') return 'demo';
   const token = getCookie(c, sessionCookie(c));
   if (!token) return null;
   const id = await sha256(token);
@@ -183,7 +185,7 @@ const loginVerifyBody = z.object({
 export const auth = new Hono<AppEnv>()
   .get('/status', async (c) => {
     const bypass = c.env.DEV_AUTH_BYPASS === '1' && isLocalhost(c);
-    return c.json({ signedIn: await hasSession(c), hasPasskey: (await credentials(c)).length > 0, bypass });
+    return c.json({ signedIn: await hasSession(c), hasPasskey: (await credentials(c)).length > 0, bypass, demo: c.env.DEMO === '1' });
   })
   .post('/register/options', async (c) => {
     const body = registerOptionsBody.parse(await c.req.json());
