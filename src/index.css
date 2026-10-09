@@ -1,48 +1,70 @@
 @import 'tailwindcss';
 
 /*
- * Tokens. Light and dark are both chosen (not an automatic flip): planes, surfaces and ink from the
- * dataviz reference palette; series-1/2 are categorical slots 1 and 2; status colors are reserved for state.
+ * Tokens. Light and dark are both chosen (not an automatic flip): warm neutrals, one accent (series-1),
+ * status colors reserved for state. Cards lift off the plane with a soft, warm-tinted shadow and a hairline
+ * ring instead of a hard border.
  */
 :root {
   color-scheme: light;
-  --plane: #f9f9f7;
-  --surface: #fcfcfb;
-  --surface-2: #f2f1ed;
-  --ink: #0b0b0b;
-  --ink-2: #52514e;
-  --muted: #6f6d68;
-  --line: #e1e0d9;
-  --baseline: #c3c2b7;
-  --ring: rgba(11, 11, 11, 0.1);
+  --plane: #f5f5f1;
+  --surface: #ffffff;
+  --surface-2: #f4f3ef;
+  --surface-3: #ebeae4;
+  --ink: #0c0c0b;
+  --ink-2: #4b4a46;
+  --muted: #74726c;
+  --line: #e8e7e1;
+  --baseline: #c9c8bf;
+  --ring: rgba(32, 28, 16, 0.07);
+  --focus: rgba(42, 120, 214, 0.22);
   --series-1: #2a78d6;
-  --series-1-soft: #cde2fb;
+  --series-1-soft: #d6e7fc;
   --series-2: #eb6834;
-  --good: #0ca30c;
-  --good-ink: #006300;
-  --warning: #fab219;
+  --good: #12a150;
+  --good-ink: #0a7a3b;
+  --good-soft: #e3f5ea;
+  --warning: #f2a516;
+  --warning-ink: #8a5a00;
+  --warning-soft: #fdf3dc;
   --serious: #ec835a;
-  --critical: #d03b3b;
+  --critical: #d63c3c;
   --critical-ink: #b42323;
+  --critical-soft: #fbe7e5;
+  --elev-card: 0 0 0 1px var(--ring), 0 1px 2px rgba(32, 28, 16, 0.04), 0 4px 16px -6px rgba(32, 28, 16, 0.07);
+  --elev-pop: 0 0 0 1px var(--ring), 0 2px 4px rgba(32, 28, 16, 0.05), 0 12px 32px -8px rgba(32, 28, 16, 0.18);
+  --hero-glow: rgba(42, 120, 214, 0.09);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:where(:not([data-theme='light'])) {
     color-scheme: dark;
-    --plane: #0d0d0d;
-    --surface: #1a1a19;
-    --surface-2: #232321;
-    --ink: #ffffff;
-    --ink-2: #c3c2b7;
-    --muted: #9a9890;
-    --line: #2c2c2a;
-    --baseline: #383835;
-    --ring: rgba(255, 255, 255, 0.1);
-    --series-1: #3987e5;
-    --series-1-soft: #184f95;
+    --plane: #0a0a0a;
+    --surface: #151514;
+    --surface-2: #1d1d1c;
+    --surface-3: #262625;
+    --ink: #f7f7f5;
+    --ink-2: #c4c3bb;
+    --muted: #8f8d86;
+    --line: #262625;
+    --baseline: #3a3a37;
+    --ring: rgba(255, 255, 255, 0.07);
+    --focus: rgba(57, 135, 229, 0.35);
+    --series-1: #4b93ea;
+    --series-1-soft: #1b3f6b;
     --series-2: #d95926;
-    --good-ink: #0ca30c;
-    --critical-ink: #e66767;
+    --good: #2bb866;
+    --good-ink: #45c97b;
+    --good-soft: rgba(43, 184, 102, 0.14);
+    --warning: #f2b129;
+    --warning-ink: #f2c25c;
+    --warning-soft: rgba(242, 177, 41, 0.13);
+    --critical: #e25555;
+    --critical-ink: #f07373;
+    --critical-soft: rgba(226, 85, 85, 0.14);
+    --elev-card: 0 0 0 1px var(--ring), inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 8px 24px -12px rgba(0, 0, 0, 0.7);
+    --elev-pop: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 16px 40px -8px rgba(0, 0, 0, 0.8);
+    --hero-glow: rgba(75, 147, 234, 0.13);
   }
 }
 
@@ -50,6 +72,7 @@
   --color-plane: var(--plane);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-muted: var(--muted);
@@ -60,11 +83,17 @@
   --color-series-2: var(--series-2);
   --color-good: var(--good);
   --color-good-ink: var(--good-ink);
+  --color-good-soft: var(--good-soft);
+  --color-warning-ink: var(--warning-ink);
+  --color-warning-soft: var(--warning-soft);
+  --color-critical-soft: var(--critical-soft);
   --color-warning: var(--warning);
   --color-serious: var(--serious);
   --color-critical: var(--critical);
   --color-critical-ink: var(--critical-ink);
   --font-sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --shadow-card: var(--elev-card);
+  --shadow-pop: var(--elev-pop);
   --font-mono: 'Geist Mono Variable', ui-monospace, 'SF Mono', monospace;
 }
 
@@ -73,7 +102,9 @@ html {
   color: var(--ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
 }
 
 body {
@@ -82,7 +113,22 @@ body {
   background: var(--plane);
 }
 
-/* Numbers that line up in columns; hero and tile numbers keep proportional figures. */
+p,
+li {
+  text-wrap: pretty;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+::selection {
+  background: var(--series-1-soft);
+}
+
+/* Numbers that line up in columns. */
 .num {
   font-variant-numeric: tabular-nums;
 }
@@ -90,21 +136,80 @@ body {
 :focus-visible {
   outline: 2px solid var(--series-1);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: 8px;
+}
+
+/* The one card that matters most: a faint glow of the accent in its corner. */
+.hero {
+  background:
+    radial-gradient(90% 70% at 100% 0%, var(--hero-glow), transparent 70%),
+    var(--surface);
+}
+
+/* Pressable things settle down a pixel, like a real button. */
+.press {
+  transition:
+    transform 160ms cubic-bezier(0.2, 0, 0, 1),
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+}
+.press:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .fade-in {
-    animation: fade-in 180ms ease-out;
+    animation: rise 260ms cubic-bezier(0.2, 0, 0, 1) both;
   }
-  @keyframes fade-in {
+  /* A screen's sections arrive one after another, quickly. */
+  .stagger > * {
+    animation: rise 420ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+  .stagger > :nth-child(2) { animation-delay: 40ms; }
+  .stagger > :nth-child(3) { animation-delay: 80ms; }
+  .stagger > :nth-child(4) { animation-delay: 120ms; }
+  .stagger > :nth-child(5) { animation-delay: 160ms; }
+  .stagger > :nth-child(6) { animation-delay: 200ms; }
+  .stagger > :nth-child(n + 7) { animation-delay: 240ms; }
+  @keyframes rise {
     from {
       opacity: 0;
-      transform: translateY(4px);
+      transform: translateY(6px);
     }
     to {
       opacity: 1;
       transform: none;
+    }
+  }
+  /* Bars fill from the left the first time they show. */
+  .grow-x {
+    transform-origin: left center;
+    animation: grow-x 700ms cubic-bezier(0.2, 0, 0, 1) both 120ms;
+  }
+  @keyframes grow-x {
+    from {
+      transform: scaleX(0);
+    }
+  }
+  /* Chart lines draw themselves once; the area under them fades in behind. */
+  .draw {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: draw 1100ms cubic-bezier(0.4, 0, 0.2, 1) forwards 150ms;
+  }
+  @keyframes draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  .fade-late {
+    animation: fade 700ms ease-out both 500ms;
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
     }
   }
 }
@@ -127,7 +232,7 @@ body {
   --skeleton: color-mix(in oklab, var(--ink) 6%, var(--surface));
   --skeleton-sheen: color-mix(in oklab, var(--ink) 11%, var(--surface));
   background: var(--skeleton);
-  border-radius: 6px;
+  border-radius: 8px;
 }
 @media (prefers-reduced-motion: no-preference) {
   .splash .bar {
