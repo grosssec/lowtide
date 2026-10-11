@@ -6,9 +6,21 @@ export class ApiError extends Error {
   }
 }
 
+/** In the public demo nothing is saved: a change is answered here, with a toast, before it reaches the server. */
+let demo = false;
+export const setDemoMode = (on: boolean) => {
+  demo = on;
+};
+export const DEMO_MESSAGE = "This is a demo with made-up data, so changes aren't saved";
+
 /** JSON fetch to the Worker. Every call carries the header the API requires for state-changing requests (CSRF guard). */
 export async function api<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<T> {
   const { json, ...rest } = init;
+  if (demo && (rest.method ?? 'GET') !== 'GET') {
+    const { toast } = await import('./feedback.tsx');
+    toast(DEMO_MESSAGE, 'info');
+    throw new ApiError(DEMO_MESSAGE, 403);
+  }
   const headers = new Headers(rest.headers);
   headers.set('X-Requested-With', 'finance-dashboard');
   if (json !== undefined) headers.set('Content-Type', 'application/json');

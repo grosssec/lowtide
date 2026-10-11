@@ -10,6 +10,7 @@ import { isoBase64URL } from '@simplewebauthn/server/helpers';
 import { Hono, type Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { z } from 'zod';
+import { appToday, isDemo } from './state.ts';
 
 export type AppEnv = { Bindings: Env };
 
@@ -185,7 +186,8 @@ const loginVerifyBody = z.object({
 export const auth = new Hono<AppEnv>()
   .get('/status', async (c) => {
     const bypass = c.env.DEV_AUTH_BYPASS === '1' && isLocalhost(c);
-    return c.json({ signedIn: await hasSession(c), hasPasskey: (await credentials(c)).length > 0, bypass, demo: c.env.DEMO === '1' });
+    const demo = isDemo(c.env);
+    return c.json({ signedIn: await hasSession(c), hasPasskey: (await credentials(c)).length > 0, bypass, demo, ...(demo ? { today: appToday(c.env) } : {}) });
   })
   .post('/register/options', async (c) => {
     const body = registerOptionsBody.parse(await c.req.json());

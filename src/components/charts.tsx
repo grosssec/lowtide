@@ -28,6 +28,26 @@ function niceTicks(min: number, max: number): number[] {
   return ticks;
 }
 
+/**
+ * Axis labels that never touch: the last one always shows, then every label that fits with a gap, walking back.
+ * Widths are estimated from the 11px font (about 6.3px a character).
+ */
+function spacedLabels(labels: string[], x: (i: number) => number, left: number, right: number) {
+  const gap = 10;
+  const widthOf = (text: string) => text.length * 6.3;
+  const kept: { i: number; anchor: 'start' | 'middle' | 'end'; from: number; to: number }[] = [];
+  for (let i = labels.length - 1; i >= 0; i--) {
+    const w = widthOf(labels[i]);
+    const anchor = i === labels.length - 1 ? 'end' : x(i) - w / 2 < left ? 'start' : 'middle';
+    const from = anchor === 'end' ? x(i) - w : anchor === 'start' ? x(i) : x(i) - w / 2;
+    const to = Math.min(from + w, right);
+    const next = kept.at(-1);
+    if (next && to + gap > next.from) continue;
+    kept.push({ i, anchor, from, to });
+  }
+  return kept.reverse();
+}
+
 function Tooltip({ x, width, children }: { x: number; width: number; children: ReactNode }) {
   const left = Math.min(Math.max(x - 80, 0), Math.max(0, width - 160));
   return (
@@ -233,7 +253,7 @@ export function MonthLines({ months, series, floor }: { months: string[]; series
     .filter(Boolean)
     .map((point, k) => `${k ? 'L' : 'M'}${point}`)
     .join('');
-  const every = width < 480 ? 2 : 1;
+  const shownLabels = spacedLabels(months, x, gutter, gutter + plotW);
 
   function onPointer(event: React.PointerEvent<SVGSVGElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -253,19 +273,11 @@ export function MonthLines({ months, series, floor }: { months: string[]; series
               </text>
             </g>
           ))}
-          {months.map((m, i) =>
-            i % every === 0 || i === months.length - 1 ? (
-              <text
-                key={m}
-                x={x(i)}
-                y={height - 6}
-                textAnchor={i === 0 ? 'start' : i === months.length - 1 ? 'end' : 'middle'}
-                className="fill-muted text-[11px]"
-              >
-                {m}
-              </text>
-            ) : null,
-          )}
+          {shownLabels.map(({ i, anchor }) => (
+            <text key={months[i]} x={x(i)} y={height - 6} textAnchor={anchor} className="fill-muted text-[11px]">
+              {months[i]}
+            </text>
+          ))}
           {floorPath && <path d={floorPath} fill="none" stroke="var(--ink-2)" strokeWidth={1.5} strokeDasharray="4 4" />}
           <defs>
             <linearGradient id="months-fill" x1="0" x2="0" y1="0" y2="1">

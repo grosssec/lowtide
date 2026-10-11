@@ -266,7 +266,7 @@ export function TransactionsPage() {
                         <div className="truncate text-sm font-medium text-ink" title={entry.description}>
                           {displayName(entry.description)}
                         </div>
-                        <div className="mt-0.5 flex items-center gap-1.5">
+                        <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
                           <Chip className="!h-5 !px-2 !text-[11px]">{ACCOUNT[entry.account] ?? entry.account}</Chip>
                           {entry.source === 'alert' && (
                             <Chip tone="accent" className="!h-5 !px-2 !text-[11px]">
@@ -276,7 +276,7 @@ export function TransactionsPage() {
                           <select
                             value={entry.category}
                             onChange={(e) => changeCategory(entry, e.target.value)}
-                            className="select-sm h-6 max-w-[11rem] truncate rounded-md border border-transparent bg-transparent pl-1 text-xs text-muted transition-colors hover:border-line hover:text-ink-2 focus:border-series-1"
+                            className="select-sm h-6 min-w-0 max-w-[11rem] truncate rounded-md border border-transparent bg-transparent pl-1 text-xs text-muted transition-colors hover:border-line hover:text-ink-2 focus:border-series-1"
                             aria-label={`Category for ${displayName(entry.description)}`}
                           >
                             {[...new Set([entry.category, ...data.categories])].map((c) => (

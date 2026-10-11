@@ -8,6 +8,9 @@ export interface AuthStatus {
   signedIn: boolean;
   hasPasskey: boolean;
   bypass: boolean;
+  /** The public demo: made-up data, read-only, frozen on `today`. */
+  demo?: boolean;
+  today?: string;
 }
 
 type RegistrationOptions = Parameters<typeof startRegistration>[0]['optionsJSON'];

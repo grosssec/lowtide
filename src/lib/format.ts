@@ -54,7 +54,14 @@ export function dayLabel(iso: string): string {
   return `${WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()]}, ${shortDate(iso)}`;
 }
 
+/** The public demo is frozen on one day (set from /api/auth/status); everywhere else it is the device's today. */
+let frozenToday: string | null = null;
+export const freezeToday = (iso: string) => {
+  frozenToday = iso;
+};
+
 export function todayISO(): string {
+  if (frozenToday) return frozenToday;
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { DEMO_MESSAGE } from '../lib/api.ts';
 
 export function Card({
   title,
@@ -256,7 +257,8 @@ export const inputClass =
   'h-10 w-full rounded-xl border border-line bg-surface px-3 text-sm text-ink shadow-[0_1px_2px_rgba(32,28,16,0.03)] transition-[border-color,box-shadow] duration-150 placeholder:text-muted hover:border-baseline focus:border-series-1 focus:shadow-[0_0_0_3px_var(--focus)] focus:outline-none';
 
 export function ErrorNote({ message }: { message?: string }) {
-  if (!message) return null;
+  // In the demo, a refused change already got its toast; no red error under it.
+  if (!message || message === DEMO_MESSAGE) return null;
   return (
     <p role="alert" className="flex items-start gap-2 rounded-xl bg-critical-soft px-3.5 py-2.5 text-sm text-ink">
       <StatusIcon level="critical" className="mt-0.5 size-4" />
