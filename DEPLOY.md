@@ -68,6 +68,18 @@ npx wrangler d1 migrations apply finance --remote   # only when migrations/ chan
 npm run deploy
 ```
 
+## Public demo
+
+https://demo.ricardogross.com: the same app with made-up data, read-only, frozen on `DEMO_TODAY` (wrangler.jsonc `env.demo`, its own D1 `finance-demo`, no cron, no secrets).
+
+```bash
+node scripts/demo.ts --remote   # tables + made-up data (replaces everything in finance-demo)
+npm run deploy:demo
+```
+- Every non-GET request gets 403 on the server; the client answers changes with a toast first.
+- To move the demo's "today", change `DEMO_TODAY` and run both commands again.
+- Local preview: `node scripts/demo.ts`, then `CLOUDFLARE_ENV=demo npx vite --port 5174`.
+
 ## Why some work runs in the browser
 
 The Workers free plan allows about 10 ms of CPU per request.
