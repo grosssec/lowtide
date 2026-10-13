@@ -55,15 +55,16 @@ I work two hourly jobs while studying, so my pay changes with my hours, and budg
 ## How it works
 
 ```mermaid
-flowchart LR
-  app["Lowtide app<br/>React, installable"]
-  gas["Apps Script<br/>bank emails, timesheets"]
+flowchart TB
+  app["Lowtide app · React, installable"]
+  gas["Apps Script · bank emails and timesheets"]
   subgraph cf["Cloudflare, free plan"]
-    worker["Worker<br/>API + Month forecast"]
+    direction LR
+    worker["Worker · API + Month forecast"]
     db[("D1")]
-    cron["Daily push<br/>8 am"]
+    cron["Daily push at 8 am"]
   end
-  push["Push services<br/>Apple, Google"]
+  push["Push services · Apple, Google"]
 
   app <-->|passkey session| worker
   gas -->|token, twice a day| worker
