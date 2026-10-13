@@ -1,5 +1,5 @@
 /**
- * Finance sync: runs inside Google (Apps Script) on the work email account (Google Workspace).
+ * Lowtide sync: runs inside Google (Apps Script) on the work email account (Google Workspace).
  *
  *   syncBankAlerts  Chase / Discover alert emails  → POST {APP_URL}/api/ingest/email
  *   syncHours       timesheets in Google Sheets    → POST {APP_URL}/api/ingest/hours
@@ -328,7 +328,7 @@ function emailDigest() {
     '',
     settings_().url,
   ];
-  MailApp.sendEmail(Session.getEffectiveUser().getEmail(), `Finance: ${digest.title}`, lines.join('\n'));
+  MailApp.sendEmail(Session.getEffectiveUser().getEmail(), `Lowtide: ${digest.title}`, lines.join('\n'));
 }
 
 // ---------- App calls ----------

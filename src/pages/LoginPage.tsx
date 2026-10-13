@@ -1,6 +1,6 @@
 import { browserSupportsWebAuthn, startAuthentication, startRegistration } from '@simplewebauthn/browser';
 import { useState } from 'react';
-import { Logo } from '../components/Shell.tsx';
+import { Lockup } from '../components/Brand.tsx';
 import { Button, ErrorNote, Field, inputClass } from '../components/ui.tsx';
 import { api } from '../lib/api.ts';
 
@@ -60,8 +60,7 @@ export function LoginPage({ status, onSignedIn }: { status: AuthStatus; onSigned
     <div className="login-bg flex min-h-dvh items-center justify-center px-4 py-10">
       <div className="fade-in w-full max-w-sm rounded-[28px] bg-surface p-7 shadow-pop sm:p-8">
         <div className="flex items-center gap-2.5">
-          <Logo />
-          <span className="text-[15px] font-semibold tracking-[-0.01em]">Finance</span>
+          <Lockup size={36} />
         </div>
         {!supported ? (
           <p className="mt-6 text-sm text-ink-2">This browser can't use passkeys. Open the app in Safari or Chrome.</p>

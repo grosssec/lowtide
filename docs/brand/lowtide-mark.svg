@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Lowtide"><defs>
+<linearGradient id="m-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f2a3a"/><stop offset=".55" stop-color="#0f141b"/><stop offset="1" stop-color="#0a0a0a"/></linearGradient>
+<radialGradient id="m-halo" cx="32" cy="34" r="22" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4b93ea" stop-opacity=".55"/><stop offset=".55" stop-color="#2a78d6" stop-opacity=".16"/><stop offset="1" stop-color="#2a78d6" stop-opacity="0"/></radialGradient>
+<linearGradient id="m-moon" x1="0" y1="22.5" x2="0" y2="37" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9cc8f7"/><stop offset=".5" stop-color="#5a9cea"/><stop offset="1" stop-color="#2a78d6"/></linearGradient>
+<clipPath id="m-sky"><path d="M0 0 H64 V37.2 H55 C49.5 34.6 45 34.6 39.5 37.2 C34 39.8 30 39.8 24.5 37.2 C19 34.6 14.5 34.6 9 37.2 H0 Z"/></clipPath>
+</defs>
+<rect width="64" height="64" rx="14.5" fill="url(#m-bg)"/>
+<rect class="lt-halo" width="64" height="64" rx="14.5" fill="url(#m-halo)"/>
+<g clip-path="url(#m-sky)"><circle class="lt-moon" cx="32" cy="34.5" r="12" fill="url(#m-moon)"/></g>
+<path class="lt-wave" d="M9 37.2 C14.5 34.6 19 34.6 24.5 37.2 C30 39.8 34 39.8 39.5 37.2 C45 34.6 49.5 34.6 55 37.2" fill="none" stroke="#f7f7f5" stroke-width="3.4" stroke-linecap="round"/>
+<path class="lt-ripple" d="M14.5 45 C18.8 43 22.2 43 26.5 45 C30.8 47 34.2 47 38.5 45 C42.8 43 46.2 43 49.5 44.6" fill="none" stroke="#f7f7f5" stroke-width="2.6" stroke-linecap="round" opacity=".42"/>
+<path class="lt-ripple lt-ripple-2" d="M21 52.4 C24.2 51 27 51 30.2 52.4 C33.4 53.8 36.2 53.8 39.4 52.4 C41 51.7 42.5 51.5 43.6 51.8" fill="none" stroke="#f7f7f5" stroke-width="2.2" stroke-linecap="round" opacity=".2"/>
+</svg>

@@ -302,21 +302,6 @@ export function PageError({ message, onRetry }: { message: string; onRetry: () =
   );
 }
 
-/** Full-screen splash while the app starts: the logo with its bars rising, nothing else. */
-export function Splash() {
-  return (
-    <div className="splash" role="status" aria-label="Loading">
-      <svg viewBox="0 0 32 32" className="size-14" aria-hidden="true">
-        <rect width="32" height="32" rx="8" fill="var(--ink)" />
-        <path className="bar" d="M8 22.5V17" stroke="var(--plane)" strokeWidth="2.6" strokeLinecap="round" />
-        <path className="bar" d="M13.4 22.5V12" stroke="var(--plane)" strokeWidth="2.6" strokeLinecap="round" />
-        <path className="bar" d="M18.7 22.5v-7" stroke="var(--plane)" strokeWidth="2.6" strokeLinecap="round" />
-        <path className="bar" d="M24 22.5V9.5" stroke="var(--series-1)" strokeWidth="2.6" strokeLinecap="round" />
-      </svg>
-    </div>
-  );
-}
-
 /** A placeholder block in the shape of the content that is loading. */
 export function Skeleton({ className = '' }: { className?: string }) {
   return <div className={`skeleton ${className}`} aria-hidden="true" />;

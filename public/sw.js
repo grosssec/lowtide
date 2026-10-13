@@ -5,7 +5,7 @@ self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 
 self.addEventListener('push', (event) => {
-  let message = { title: 'Finance', body: '', url: '/#month' };
+  let message = { title: 'Lowtide', body: '', url: '/#month' };
   try {
     if (event.data) message = { ...message, ...event.data.json() };
   } catch {

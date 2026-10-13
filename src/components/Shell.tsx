@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { Lockup } from './Brand.tsx';
 
 export type Tab = 'month' | 'plan' | 'transactions' | 'settings';
 /** A tab, or a Settings section ("settings/goals"). */
@@ -27,16 +28,6 @@ function Icon({ tab }: { tab: Tab }) {
   );
 }
 
-export function Logo() {
-  return (
-    <svg viewBox="0 0 32 32" className="size-8" aria-hidden="true">
-      <rect width="32" height="32" rx="8" fill="var(--ink)" />
-      <path d="M8 22.5V17m5.4 5.5V12m5.3 10.5v-7" stroke="var(--plane)" strokeWidth="2.6" strokeLinecap="round" />
-      <path d="M24 22.5V9.5" stroke="var(--series-1)" strokeWidth="2.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 /** True once the page has scrolled a little: the header then gets its glass background. */
 function useScrolled(): boolean {
   const [scrolled, setScrolled] = useState(false);
@@ -59,9 +50,8 @@ export function Shell({ tab, onTab, children, banner }: { tab: Tab; onTab: (tab:
         }`}
       >
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:h-16 sm:px-6">
-          <button type="button" onClick={() => onTab('month')} className="press flex items-center gap-2.5 rounded-lg" aria-label="Finance, go to Month">
-            <Logo />
-            <span className="text-[15px] font-semibold tracking-[-0.01em]">Finance</span>
+          <button type="button" onClick={() => onTab('month')} className="press rounded-lg" aria-label="Lowtide, go to Month">
+            <Lockup size={32} />
           </button>
           <nav aria-label="Sections" className="hidden rounded-full bg-surface-2 p-1 shadow-[inset_0_0_0_1px_var(--ring)] sm:flex">
             {TABS.map((t) => (

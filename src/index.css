@@ -306,18 +306,7 @@ dialog.sheet {
   }
 }
 
-/* Splash: same look as the static one in index.html, so the hand-off from HTML to React is invisible. */
-.splash {
-  position: fixed;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  background: var(--plane);
-}
-.splash .bar {
-  transform-origin: center bottom;
-  transform-box: fill-box;
-}
+/* The splash (.splash, .lt-*) is styled in index.html, so it looks the same before and after the app loads. */
 
 /* Skeletons: the shape of the screen that is coming, with a slow sheen. */
 .skeleton {
@@ -327,26 +316,6 @@ dialog.sheet {
   border-radius: 8px;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .splash .bar {
-    animation: splash-grow 1.1s cubic-bezier(0.5, 0, 0.2, 1) infinite alternate;
-  }
-  .splash .bar:nth-of-type(2) {
-    animation-delay: 0.12s;
-  }
-  .splash .bar:nth-of-type(3) {
-    animation-delay: 0.24s;
-  }
-  .splash .bar:nth-of-type(4) {
-    animation-delay: 0.36s;
-  }
-  @keyframes splash-grow {
-    from {
-      transform: scaleY(0.45);
-    }
-    to {
-      transform: scaleY(1);
-    }
-  }
   .skeleton {
     background: linear-gradient(100deg, var(--skeleton) 40%, var(--skeleton-sheen) 50%, var(--skeleton) 60%) 0 0 / 250% 100%;
     animation: skeleton-sheen 1.6s ease-in-out infinite;

@@ -26,7 +26,7 @@
 		}
 	],
 	"vars": {
-		"APP_NAME": "Finance",
+		"APP_NAME": "Lowtide",
 		"TIMEZONE": "America/Chicago",
 		"DEMO": "0",
 		"DEMO_TODAY": ""
@@ -60,7 +60,7 @@
 				}
 			],
 			"vars": {
-				"APP_NAME": "Finance demo",
+				"APP_NAME": "Lowtide demo",
 				"TIMEZONE": "America/Chicago",
 				"DEMO": "1",
 				"DEMO_TODAY": "2026-10-08"

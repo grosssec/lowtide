@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Shell, type Route, type Tab } from './components/Shell.tsx';
 import { Toaster } from './components/overlay.tsx';
-import { Splash } from './components/ui.tsx';
+import { Splash } from './components/Brand.tsx';
 import { api, setDemoMode } from './lib/api.ts';
 import { freezeToday, shortDate } from './lib/format.ts';
 import { LoginPage, type AuthStatus } from './pages/LoginPage.tsx';

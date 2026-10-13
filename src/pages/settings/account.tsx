@@ -95,8 +95,8 @@ export function BalancesCard({ balances, actuals, onSaved }: { balances: Balance
 
 const PUSH_TEXT: Record<PushState, string> = {
   unsupported: 'This browser cannot show notifications.',
-  'needs-home-screen': 'On iPhone: Share → Add to Home Screen, open Finance from the Home Screen, then turn notifications on there.',
-  blocked: 'Notifications are blocked for this app. Allow them in the browser settings (iPhone: Settings → Notifications → Finance).',
+  'needs-home-screen': 'On iPhone: Share → Add to Home Screen, open Lowtide from the Home Screen, then turn notifications on there.',
+  blocked: 'Notifications are blocked for this app. Allow them in the browser settings (iPhone: Settings → Notifications → Lowtide).',
   off: 'Off on this device.',
   on: 'On for this device.',
 };
