@@ -32,8 +32,9 @@ await withChrome(async (page) => {
     await page.waitFor("document.querySelector('main h1') && !document.querySelector('.login-bg')");
     await sleep(1800);
     if (shot.scrollTo) {
-      await page.evaluate(
-        `(() => { const h = [...document.querySelectorAll('h2')].find((e) => e.textContent === ${JSON.stringify(shot.scrollTo)}); if (h) window.scrollTo(0, h.getBoundingClientRect().top + scrollY - 80); })()`,
+      await page.call(
+        "(title) => { const h = [...document.querySelectorAll('h2')].find((e) => e.textContent === title); if (h) window.scrollTo(0, h.getBoundingClientRect().top + scrollY - 80); }",
+        shot.scrollTo,
       );
       await sleep(600);
     }

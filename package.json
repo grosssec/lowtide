@@ -2,7 +2,7 @@
   "name": "lowtide",
   "private": true,
   "license": "MIT",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A day-by-day forecast of your balance that tells you what is safe to spend before your next paycheck.",
   "homepage": "https://lowtide.ricardogross.com",
   "repository": {

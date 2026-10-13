@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Shell, type Route, type Tab } from './components/Shell.tsx';
 import { Toaster } from './components/overlay.tsx';
 import { Splash } from './components/Brand.tsx';
+import { PageError } from './components/ui.tsx';
 import { api, setDemoMode } from './lib/api.ts';
 import { freezeToday, shortDate } from './lib/format.ts';
 import { LoginPage, type AuthStatus } from './pages/LoginPage.tsx';
@@ -54,6 +55,8 @@ function DemoBanner({ today }: { today?: string }) {
 
 export default function App() {
   const [status, setStatus] = useState<AuthStatus | null>(null);
+  const [failure, setFailure] = useState<string>();
+  const [attempt, setAttempt] = useState(0);
   const [tab, setTab] = useHashTab();
 
   useEffect(() => {
@@ -63,11 +66,25 @@ export default function App() {
           setDemoMode(true);
           if (s.today) freezeToday(s.today);
         }
+        setFailure(undefined);
         setStatus(s);
       })
-      .catch(() => setStatus({ signedIn: false, hasPasskey: true, bypass: false }));
-  }, []);
+      // Offline or refused: say so and offer a retry, rather than showing the sign-in page to someone who is signed in.
+      .catch((e: Error) => setFailure(e.message));
+  }, [attempt]);
 
+  if (failure)
+    return (
+      <div className="min-h-dvh px-4 pt-10">
+        <PageError
+          message={failure}
+          onRetry={() => {
+            setFailure(undefined);
+            setAttempt((n) => n + 1);
+          }}
+        />
+      </div>
+    );
   if (!status) return <Splash />;
   if (!status.signedIn) return <LoginPage status={status} onSignedIn={() => window.location.reload()} />;
 

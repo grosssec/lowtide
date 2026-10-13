@@ -2,6 +2,14 @@
 
 All notable changes to Lowtide. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-10-13
+
+### Fixed
+
+- Opening the app many times in a minute could show the sign-in page: the strict sign-in rate limit now applies only to sign-in attempts, and the status check shares the general limit.
+- When the app can't reach the server at start, it says so and offers a retry instead of showing the sign-in page.
+- Development scripts: replies from Chrome are validated before use, and values are passed to the page as arguments instead of being spliced into code (CodeQL).
+
 ## [1.0.0] - 2026-10-13
 
 The first public release.
@@ -38,4 +46,5 @@ The first public release.
 
 - A read-only copy with six months of made-up data, frozen on one day, at [demo.ricardogross.com](https://demo.ricardogross.com).
 
+[1.0.1]: https://github.com/grosssec/lowtide/releases/tag/v1.0.1
 [1.0.0]: https://github.com/grosssec/lowtide/releases/tag/v1.0.0

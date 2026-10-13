@@ -21,6 +21,8 @@ export interface Page {
   media(options: { dark?: boolean; reducedMotion?: boolean }): Promise<void>;
   open(url: string, waitMs?: number): Promise<void>;
   evaluate(expression: string): Promise<void>;
+  /** Runs a function in the page with the given arguments, passed as values (never spliced into code). */
+  call(functionDeclaration: string, ...args: unknown[]): Promise<void>;
   /** Polls a JavaScript condition until it is true; throws after `timeoutMs`. */
   waitFor(condition: string, timeoutMs?: number): Promise<void>;
   png(): Promise<Buffer>;
@@ -54,8 +56,13 @@ export async function withChrome<T>(work: (page: Page) => Promise<T>): Promise<T
     let id = 0;
     const pending = new Map<number, (result: Record<string, unknown>) => void>();
     socket.addEventListener('message', (event) => {
-      const message = JSON.parse(String(event.data)) as { id?: number; result?: Record<string, unknown> };
-      if (message.id !== undefined) pending.get(message.id)?.(message.result ?? {});
+      const message = JSON.parse(String(event.data)) as { id?: unknown; result?: Record<string, unknown> };
+      // Only replies to our own numbered commands resolve anything; events and unknown ids are ignored.
+      if (typeof message.id !== 'number') return;
+      const resolve = pending.get(message.id);
+      if (typeof resolve !== 'function') return;
+      pending.delete(message.id);
+      resolve(message.result ?? {});
     });
     const send: Page['send'] = (method, params = {}) =>
       new Promise((resolve) => {
@@ -83,6 +90,15 @@ export async function withChrome<T>(work: (page: Page) => Promise<T>): Promise<T
       },
       async evaluate(expression) {
         await send('Runtime.evaluate', { expression, awaitPromise: true });
+      },
+      async call(functionDeclaration, ...args) {
+        const { result } = (await send('Runtime.evaluate', { expression: 'globalThis' })) as { result?: { objectId?: string } };
+        await send('Runtime.callFunctionOn', {
+          objectId: result?.objectId,
+          functionDeclaration,
+          arguments: args.map((value) => ({ value })),
+          awaitPromise: true,
+        });
       },
       async waitFor(condition, timeoutMs = 15000) {
         const until = Date.now() + timeoutMs;

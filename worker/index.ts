@@ -41,10 +41,12 @@ app.use('/api/*', async (c, next) => {
 // The sync script authenticates with its own bearer token (worker/ingest.ts), never with the session cookie.
 const isIngest = (path: string) => path.startsWith('/api/ingest/');
 
-// Rate limits per client IP: sign-in is the tightest (that is where guessing happens), then the sync, then the rest.
+// Rate limits per client IP: sign-in attempts are the tightest (that is where guessing happens), then the sync, then the rest.
+// GET /api/auth/status runs on every app load, so it shares the general limit rather than the sign-in one.
 app.use('/api/*', async (c, next) => {
   const path = c.req.path;
-  const limiter = path.startsWith('/api/auth/') ? c.env.AUTH_LIMIT : isIngest(path) ? c.env.INGEST_LIMIT : c.env.API_LIMIT;
+  const signIn = path.startsWith('/api/auth/') && c.req.method !== 'GET';
+  const limiter = signIn ? c.env.AUTH_LIMIT : isIngest(path) ? c.env.INGEST_LIMIT : c.env.API_LIMIT;
   const ip = c.req.header('CF-Connecting-IP') ?? 'local';
   const { success } = await limiter.limit({ key: ip });
   if (!success) {
