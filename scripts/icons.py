@@ -40,7 +40,7 @@ def icon(size: int, inset: float) -> Image.Image:
             radius=width / 2,
             fill=ACCENT if i == len(BARS) - 1 else BAR,
         )
-    return img.resize((size, size), Image.LANCZOS)
+    return img.resize((size, size), Image.Resampling.LANCZOS)
 
 
 # Regular icons fill the square (iOS and Android round the corners); maskable keeps the bars in the safe zone.
