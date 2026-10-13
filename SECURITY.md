@@ -39,7 +39,7 @@ There are no bank credentials anywhere. Data comes in only from bank alert email
 | Phishing / forged bank email | Inject fake spending or balances | DMARC check in the script, exact sender domain check on the server, parser ignores reminders, statements and marketing |
 | Leaked sync token | Inject data, read the digest | Token can't read transactions or settings; constant-time comparison; rotation documented |
 | Malicious push payload / open redirect | Send the user elsewhere | Only the server holds the VAPID key; the service worker opens same-origin URLs only |
-| Supply chain | Malicious or vulnerable dependency | Small dependency set, `npm audit` clean, overrides for vulnerable transitive packages |
+| Supply chain | Malicious or vulnerable dependency | Small dependency set, `npm audit` clean, overrides for vulnerable transitive packages, no dependency install scripts allowed (npm 11 blocks them; none are needed), Dependabot updates |
 
 Out of scope: a compromised Cloudflare or Google account, a compromised owner device with the app unlocked, and Cloudflare-level volumetric DDoS (handled by the platform).
 
