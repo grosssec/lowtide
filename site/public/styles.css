@@ -728,6 +728,14 @@ h2 {
   font-size: clamp(36px, 5.4vw, 64px);
 }
 
+/* The 404 page: the closing block, alone on the screen (no inline styles: the CSP allows none). */
+.closing.lost {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  margin-top: 0;
+}
+
 /* ---------- Footer ---------- */
 
 .footer {
