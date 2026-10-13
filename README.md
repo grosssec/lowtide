@@ -54,25 +54,10 @@ I work two hourly jobs while studying, so my pay changes with my hours, and budg
 
 ## How it works
 
-```mermaid
-flowchart TB
-  app["Lowtide app · React, installable"]
-  gas["Apps Script · bank emails and timesheets"]
-  subgraph cf["Cloudflare, free plan"]
-    direction LR
-    worker["Worker · API + Month forecast"]
-    db[("D1")]
-    cron["Daily push at 8 am"]
-  end
-  push["Push services · Apple, Google"]
-
-  app <-->|passkey session| worker
-  gas -->|token, twice a day| worker
-  worker <--> db
-  cron --> worker
-  worker -->|encrypted| push
-  push --> app
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/architecture-dark.svg" />
+  <img src="docs/architecture-light.svg" alt="The app talks to a Cloudflare Worker with a D1 database over a passkey session; a Google Apps Script sends bank alert emails and timesheet hours with a bearer token twice a day; a cron job sends an encrypted push through Apple and Google push services every morning." width="100%" />
+</picture>
 
 1. **Hours become paychecks.** Each job has pay periods and pay-date rules (a day of the month rolled to a business day, or the n-th business day). After the last logged day, a job counts the average of its recent full weeks, capped so extra hours stay extra.
 2. **Everything goes on one timeline.** Bills, budgets spread per day, one-offs, trips and job breaks sit next to the paychecks. For the current month, budgets count only what is left of them, and bills that are due but not seen yet move to tomorrow.

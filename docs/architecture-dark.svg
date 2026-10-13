@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 470" width="960" height="470" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Lowtide architecture: the app talks to a Cloudflare Worker with a D1 database; a Google Apps Script sends bank emails and timesheet hours; a daily cron sends an encrypted push notification through Apple and Google push services back to the app.">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#4b93ea" /></marker></defs>
+<rect x="330" y="36" width="330" height="314" rx="22" fill="#0d1520" stroke="#1d3a5f" />
+<text x="352" y="62" font-size="12" font-weight="600" letter-spacing="0.06em" fill="#4b93ea">CLOUDFLARE · FREE PLAN</text>
+<rect x="352" y="78" width="286" height="112" rx="14" fill="#151514" stroke="#2c2c2a" />
+<text x="370" y="108" font-size="15" font-weight="600" fill="#f4f4f1">Worker (Hono)</text>
+<text x="370" y="132" font-size="13.5" fill="#c7c6bf">Sign-in, API, sync, security</text>
+<text x="370" y="151" font-size="12.5" fill="#9c9b94">Builds the Month forecast in ~1 ms</text>
+<rect x="352" y="232" width="133" height="96" rx="14" fill="#151514" stroke="#2c2c2a" />
+<text x="370" y="262" font-size="15" font-weight="600" fill="#f4f4f1">D1</text>
+<text x="370" y="286" font-size="12.5" fill="#9c9b94">SQLite at the edge</text>
+<rect x="505" y="232" width="133" height="96" rx="14" fill="#151514" stroke="#2c2c2a" />
+<text x="523" y="262" font-size="15" font-weight="600" fill="#f4f4f1">Cron</text>
+<text x="523" y="286" font-size="12.5" fill="#9c9b94">Push at 8 am</text>
+<rect x="20" y="128" width="230" height="132" rx="14" fill="#151514" stroke="#2c2c2a" />
+<text x="38" y="158" font-size="15" font-weight="600" fill="#f4f4f1">Lowtide app</text>
+<text x="38" y="182" font-size="13.5" fill="#c7c6bf">React, installable on a phone</text>
+<text x="38" y="201" font-size="12.5" fill="#9c9b94">12-month plan and statement</text>
+<text x="38" y="220" font-size="12.5" fill="#9c9b94">parsing run here</text>
+<rect x="740" y="56" width="200" height="112" rx="14" fill="#151514" stroke="#2c2c2a" />
+<text x="758" y="86" font-size="15" font-weight="600" fill="#f4f4f1">Apps Script</text>
+<text x="758" y="110" font-size="13.5" fill="#c7c6bf">Bank alert emails</text>
+<text x="758" y="129" font-size="13.5" fill="#c7c6bf">Timesheet hours</text>
+<rect x="740" y="236" width="200" height="100" rx="14" fill="#151514" stroke="#2c2c2a" />
+<text x="758" y="266" font-size="15" font-weight="600" fill="#f4f4f1">Push services</text>
+<text x="758" y="290" font-size="13.5" fill="#c7c6bf">Apple, Google</text>
+<path d="M250 168 C 295 168, 305 128, 350 128" fill="none" stroke="#4b93ea" stroke-width="2" stroke-linecap="round" marker-start="url(#a)" marker-end="url(#a)" />
+<text x="296" y="118" font-size="12" font-weight="500" fill="#9cc4f5" text-anchor="middle">passkey session</text>
+<path d="M740 112 L 640 112" fill="none" stroke="#4b93ea" stroke-width="2" stroke-linecap="round" marker-end="url(#a)" />
+<text x="689" y="102" font-size="12" font-weight="500" fill="#9cc4f5" text-anchor="middle">bearer token</text><text x="689" y="132" font-size="12" font-weight="500" fill="#9cc4f5" text-anchor="middle">twice a day</text>
+<path d="M418 194 L 418 228" fill="none" stroke="#4b93ea" stroke-width="2" stroke-linecap="round" marker-start="url(#a)" marker-end="url(#a)" />
+<path d="M571 228 L 571 194" fill="none" stroke="#4b93ea" stroke-width="2" stroke-linecap="round" marker-end="url(#a)" />
+<path d="M640 170 C 690 170, 690 286, 738 286" fill="none" stroke="#4b93ea" stroke-width="2" stroke-linecap="round" marker-end="url(#a)" />
+<text x="700" y="232" font-size="12" font-weight="500" fill="#9cc4f5" text-anchor="end">encrypted</text>
+<path d="M840 338 C 840 425, 600 430, 470 430 C 300 430, 135 420, 135 262" fill="none" stroke="#4b93ea" stroke-width="2" stroke-linecap="round" stroke-dasharray="1 0" marker-end="url(#a)" />
+<text x="480" y="450" font-size="12" font-weight="500" fill="#9cc4f5" text-anchor="middle">Every morning: Balance $X · Available $Y</text>
+</svg>
