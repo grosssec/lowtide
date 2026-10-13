@@ -56,23 +56,21 @@ I work two hourly jobs while studying, so my pay changes with my hours, and budg
 
 ```mermaid
 flowchart LR
-  subgraph Device["Phone or laptop (installable web app)"]
-    UI["React app<br/>12-month plan and statement parsing run here"]
+  app["Lowtide app<br/>React, installable"]
+  gas["Apps Script<br/>bank emails, timesheets"]
+  subgraph cf["Cloudflare, free plan"]
+    worker["Worker<br/>API + Month forecast"]
+    db[("D1")]
+    cron["Daily push<br/>8 am"]
   end
-  subgraph CF["Cloudflare, free plan"]
-    W["Worker (Hono)<br/>auth, API, Month forecast"]
-    DB[("D1")]
-    C["Cron: daily push"]
-  end
-  GS["Google Apps Script<br/>bank alert emails + timesheets"]
-  P["Apple / Google push services"]
+  push["Push services<br/>Apple, Google"]
 
-  UI -- "passkey session" --> W
-  GS -- "bearer token, twice a day" --> W
-  W <--> DB
-  C --> W
-  W -- "encrypted Web Push" --> P
-  P --> UI
+  app <-->|passkey session| worker
+  gas -->|token, twice a day| worker
+  worker <--> db
+  cron --> worker
+  worker -->|encrypted| push
+  push --> app
 ```
 
 1. **Hours become paychecks.** Each job has pay periods and pay-date rules (a day of the month rolled to a business day, or the n-th business day). After the last logged day, a job counts the average of its recent full weeks, capped so extra hours stay extra.
@@ -93,7 +91,7 @@ The full design, data model, API and the decisions behind them: [docs/architectu
 
 ## Security and privacy
 
-There are no bank credentials anywhere: data comes from alert emails, files you import and numbers you type, and the app never moves money. Sign-in is passkeys only, sessions live in `__Host-` cookies, every body is validated, and the API sets strict headers and rate limits. No real financial data is in this repository. The threat model, every control and two review rounds (automated scans, a Trail of Bits sharp-edges review, an OWASP Top 10 pass) are written up in [SECURITY.md](SECURITY.md).
+There are no bank credentials anywhere: data comes from alert emails, files you import and numbers you type, and the app never moves money. Sign-in is passkeys only, sessions live in `__Host-` cookies, every body is validated, and the API sets strict headers and rate limits. No real financial data is in this repository. The threat model, every control and three review rounds (automated scans and live probing, a Trail of Bits sharp-edges review with an OWASP Top 10 pass, and an audit before publishing) are written up in [SECURITY.md](SECURITY.md).
 
 ## Try it locally
 
@@ -102,8 +100,8 @@ You need Node 22.18 or newer (for TypeScript type stripping).
 ```bash
 git clone https://github.com/grosssec/lowtide.git && cd lowtide
 npm install
-node scripts/demo.ts                       # tables + six months of made-up data in a local database
-CLOUDFLARE_ENV=demo npx vite --port 5174   # the app and its Worker on http://localhost:5174
+node scripts/demo.ts                       # a local database with made-up data
+CLOUDFLARE_ENV=demo npx vite --port 5174   # then open http://localhost:5174
 ```
 
 To run it with your own data and deploy your own copy (Cloudflare free plan, about 15 minutes): [DEPLOY.md](DEPLOY.md). Email and timesheet sync: [apps-script/README.md](apps-script/README.md).
