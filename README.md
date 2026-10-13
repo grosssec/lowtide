@@ -97,3 +97,7 @@ React 19, Vite 8, Tailwind 4 · Cloudflare Workers, D1, Cron Triggers, Wrangler 
 ## Privacy
 
 No real financial data is in this repository: statements, balances and plans live in the gitignored `data/` folder and the deployed database. The app never moves money and never sees a bank password; the Apps Script reads Gmail read-only and only looks at Chase and Discover emails.
+
+## License
+
+[MIT](LICENSE)
