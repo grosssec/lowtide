@@ -1,0 +1,10 @@
+# Generated files: collapsed in diffs and left out of the language stats
+worker-configuration.d.ts linguist-generated=true
+package-lock.json linguist-generated=true
+
+# Google Apps Script is JavaScript
+*.gs linguist-language=JavaScript
+
+# Images are binary
+*.png binary
+*.woff2 binary

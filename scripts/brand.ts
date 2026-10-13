@@ -4,7 +4,7 @@
  *   public/favicon.svg, *.png     favicon, app icons (192, 512, maskable) and the Apple touch icon
  *   public/og.png                 the link preview (1200 × 630)
  *   docs/social-preview.png       GitHub's social preview (1280 × 640)
- *   site/og.png                   the landing page's link preview
+ *   site/public/                  the landing page's copies of the mark, icons, link preview and screenshots
  *
  * The social images use the demo screenshots in docs/screenshots (scripts/screenshots.ts makes them).
  * Run: node scripts/brand.ts
@@ -107,8 +107,12 @@ try {
     await render(p, social(1200, 630), root('public/og.png'), 1200, 630);
     await render(p, social(1280, 640), root('docs/social-preview.png'), 1280, 640);
   });
-  mkdirSync(root('site'), { recursive: true });
-  copyFileSync(root('public/og.png'), root('site/og.png'));
+  // The landing page (site/) uses the same mark, icons, link preview and demo screenshots.
+  mkdirSync(root('site/public/img'), { recursive: true });
+  for (const file of ['og.png', 'favicon.svg', 'apple-touch-icon.png']) copyFileSync(root(`public/${file}`), root(`site/public/${file}`));
+  for (const shot of ['month-phone-dark', 'month-desktop', 'plan-desktop', 'transactions-phone', 'plan-goals-phone', 'settings-phone']) {
+    copyFileSync(root(`docs/screenshots/${shot}.png`), root(`site/public/img/${shot}.png`));
+  }
 } finally {
   rmSync(work, { recursive: true, force: true });
 }

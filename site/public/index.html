@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Lowtide · Know what's safe to spend</title>
+    <meta name="description" content="Lowtide forecasts your balance every day until your next paycheck, finds the lowest point and tells you what is safe to spend without touching your reserve. Built for paychecks that change." />
+    <meta name="theme-color" content="#07090d" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="canonical" href="https://lowtide.ricardogross.com/" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="preload" href="/fonts/geist.woff2" as="font" type="font/woff2" crossorigin />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Lowtide" />
+    <meta property="og:url" content="https://lowtide.ricardogross.com/" />
+    <meta property="og:title" content="Lowtide · Know what's safe to spend" />
+    <meta property="og:description" content="A day-by-day forecast of your balance, built for paychecks that change. See your low tide before it comes." />
+    <meta property="og:image" content="https://lowtide.ricardogross.com/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Lowtide on a phone: what is safe to spend and the forecast of the balance, with a moon rising over the sea" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Lowtide",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Web, iOS, Android (PWA)",
+        "description": "A day-by-day cash-flow forecast that tells you what is safe to spend before your next paycheck.",
+        "url": "https://lowtide.ricardogross.com/",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@type": "Person", "name": "Ricardo Gross", "url": "https://github.com/grosssec" }
+      }
+    </script>
+    <script src="/main.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="nav" data-nav>
+      <div class="wrap nav-row">
+        <a class="brand" href="/" aria-label="Lowtide, home">
+          <img src="/favicon.svg" alt="" width="30" height="30" />
+          <span>lowtide</span>
+        </a>
+        <nav aria-label="Sections">
+          <a href="#how">How it works</a>
+          <a href="#features">Features</a>
+          <a href="#privacy">Privacy</a>
+          <a href="https://github.com/grosssec/lowtide">GitHub</a>
+        </nav>
+        <a class="button small" href="https://demo.ricardogross.com">Live demo</a>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- Hero: the night sea, with the moon rising behind the app -->
+      <section class="hero">
+        <div class="stars" aria-hidden="true"></div>
+        <div class="wrap hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow"><span class="dot" aria-hidden="true"></span>Cash-flow forecast for paychecks that change</p>
+            <h1>Know what's<br />safe to spend.</h1>
+            <p class="lead">
+              Your balance has tides. Paychecks lift it; rent, bills and the card pull it down. Lowtide forecasts every day until your next paycheck, finds
+              the lowest point and tells you what you can spend without touching your reserve.
+            </p>
+            <div class="actions">
+              <a class="button" href="https://demo.ricardogross.com">Try the live demo <span aria-hidden="true">→</span></a>
+              <a class="button ghost" href="https://github.com/grosssec/lowtide">
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                View the code
+              </a>
+            </div>
+            <p class="note">The demo runs on made-up data. Nothing to sign up for.</p>
+          </div>
+
+          <div class="hero-visual">
+            <div class="moon" aria-hidden="true"></div>
+            <figure class="phone">
+              <img src="/img/month-phone-dark.png" width="780" height="1688" alt="Lowtide's Month screen: $390 safe to spend, about $33 a day until the Oct 20 paycheck, and the forecast chart with its lowest point marked." />
+            </figure>
+            <div class="float float-push" aria-hidden="true">
+              <img src="/apple-touch-icon.png" alt="" width="38" height="38" />
+              <span>
+                <span class="push-top"><b>Lowtide</b><span>8:00 AM</span></span>
+                <span class="push-title">Balance $2,794 · Available $390</span>
+                <span class="push-body">Rent $725 on Nov 1</span>
+              </span>
+            </div>
+            <div class="float float-low" aria-hidden="true">
+              <span class="float-label"><span class="tide-dot"></span>Low tide · Nov 1</span>
+              <span class="float-value">$1,890</span>
+              <span class="float-meta">still above the $1,500 reserve</span>
+            </div>
+          </div>
+        </div>
+        <svg class="sea" viewBox="0 0 1440 220" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="sea-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1220" /><stop offset="1" stop-color="#07090d" /></linearGradient>
+            <linearGradient id="glade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4b93ea" stop-opacity=".22" /><stop offset="1" stop-color="#4b93ea" stop-opacity="0" /></linearGradient>
+          </defs>
+          <path d="M0 40 Q60 26 120 40 T240 40 T360 40 T480 40 T600 40 T720 40 T840 40 T960 40 T1080 40 T1200 40 T1320 40 T1440 40 V220 H0 Z" fill="url(#sea-fill)" />
+          <ellipse class="glade" cx="1030" cy="44" rx="300" ry="90" fill="url(#glade)" />
+          <path class="wave w1" d="M-120 40 Q-60 26 0 40 T120 40 T240 40 T360 40 T480 40 T600 40 T720 40 T840 40 T960 40 T1080 40 T1200 40 T1320 40 T1440 40 T1560 40" />
+          <path class="wave w2" d="M-100 82 Q-50 72 0 82 T100 82 T200 82 T300 82 T400 82 T500 82 T600 82 T700 82 T800 82 T900 82 T1000 82 T1100 82 T1200 82 T1300 82 T1400 82 T1500 82 T1600 82" />
+          <path class="wave w3" d="M-80 120 Q-40 112 0 120 T80 120 T160 120 T240 120 T320 120 T400 120 T480 120 T560 120 T640 120 T720 120 T800 120 T880 120 T960 120 T1040 120 T1120 120 T1200 120 T1280 120 T1360 120 T1440 120 T1520 120" />
+        </svg>
+      </section>
+
+      <!-- The problem -->
+      <section class="section" id="why">
+        <div class="wrap">
+          <p class="kicker reveal">Why Lowtide</p>
+          <h2 class="reveal">A balance is a snapshot.<br />Your month is a tide.</h2>
+          <p class="section-lead reveal">
+            The number in your bank app says nothing about next Tuesday, when rent and the card bill land two days before payday. Lowtide looks ahead
+            for you.
+          </p>
+          <div class="cards three">
+            <article class="card reveal">
+              <div class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 18c2.5 0 2.5-6 5-6s2.5 3 5 3 2.5-9 6-9" /></svg>
+              </div>
+              <h3>Paychecks that change</h3>
+              <p>Hours vary, so does pay. Lowtide reads your timesheets and learns what a normal week looks like. Extra hours stay extra.</p>
+            </article>
+            <article class="card reveal">
+              <div class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 16.5Zm0 3h14M9 3v4m6-4v4" /></svg>
+              </div>
+              <h3>Bills that don't</h3>
+              <p>Rent, phone, insurance and the card land on fixed days. Every one of them is on the calendar before it hits.</p>
+            </article>
+            <article class="card reveal">
+              <div class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 15.5h16M6 19h12" stroke-dasharray="1.5 3" /><path d="M4 11c3 0 3-4 6-4s3 4 6 4 3-3 4-3" /></svg>
+              </div>
+              <h3>A floor you never touch</h3>
+              <p>Pick a reserve. Every number Lowtide shows you already keeps it out of reach, from the day it starts.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- How it works -->
+      <section class="section" id="how">
+        <div class="wrap">
+          <p class="kicker reveal">How it works</p>
+          <h2 class="reveal">Three steps, then it runs itself.</h2>
+          <ol class="steps">
+            <li class="step reveal">
+              <span class="step-n">1</span>
+              <h3>Bring what you already have</h3>
+              <p>Bank alert emails flow in twice a day; statements and CSVs drop in when you have them. Timesheets sync on their own. No bank password, ever.</p>
+            </li>
+            <li class="step reveal">
+              <span class="step-n">2</span>
+              <h3>It forecasts every day</h3>
+              <p>Hours become paychecks on your real pay dates. Bills, budgets, trips and breaks go on the same timeline, day by day.</p>
+            </li>
+            <li class="step reveal">
+              <span class="step-n">3</span>
+              <h3>You get one number</h3>
+              <p>What's safe to spend, every morning at 8 as a notification, with the low tide behind it whenever you open the app.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- Features -->
+      <section class="section" id="features">
+        <div class="wrap">
+          <p class="kicker reveal">Features</p>
+          <h2 class="reveal">Everything your month needs.<br />Nothing it doesn't.</h2>
+
+          <div class="feature reveal">
+            <div class="feature-copy">
+              <h3>The low tide, before it comes.</h3>
+              <p>
+                A day-by-day forecast to the end of next month: paydays, bills, the tightest day and your reserve on one chart. Budgets fill as you spend, so you
+                see a problem while there is still time to change course.
+              </p>
+              <ul class="ticks">
+                <li>Safe to spend, and how much that is per day</li>
+                <li>Whether next month is covered, job by job</li>
+                <li>The next 14 days of bills and paychecks</li>
+              </ul>
+            </div>
+            <figure class="shot wide"><img src="/img/month-desktop.png" width="2560" height="1800" loading="lazy" decoding="async" alt="The Month screen on a laptop: safe to spend, the forecast chart with paydays and the reserve, and today's balances." /></figure>
+          </div>
+
+          <div class="feature flip reveal">
+            <div class="feature-copy">
+              <h3>Twelve months ahead, always.</h3>
+              <p>A rolling forecast of every month-end, savings goals filled in priority order, and how much room each trip has without breaking the reserve.</p>
+              <ul class="ticks">
+                <li>Goals with what you have now and what you'll have by the date</li>
+                <li>The extra saving a month that closes any gap</li>
+                <li>The assumptions behind it, written in plain words</li>
+              </ul>
+            </div>
+            <figure class="shot wide"><img src="/img/plan-desktop.png" width="2560" height="1800" loading="lazy" decoding="async" alt="The Plan screen: the balance at the end of each of the next twelve months, above the reserve line." /></figure>
+          </div>
+
+          <div class="phones reveal">
+            <figure class="mini">
+              <img src="/img/transactions-phone.png" width="780" height="1688" loading="lazy" decoding="async" alt="Transactions grouped by day, with merchant initials and categories." />
+              <figcaption><b>Your money comes to you.</b> Bank alerts arrive by themselves; statements and CSVs import right in the browser.</figcaption>
+            </figure>
+            <figure class="mini">
+              <img src="/img/plan-goals-phone.png" width="780" height="1688" loading="lazy" decoding="async" alt="A savings goal with what is saved now and the forecast by its date." />
+              <figcaption><b>Goals that tell the truth.</b> Saved now, the forecast by the date, and what it takes to get there.</figcaption>
+            </figure>
+            <figure class="mini">
+              <img src="/img/settings-phone.png" width="780" height="1688" loading="lazy" decoding="async" alt="Settings grouped into money, income, data and account." />
+              <figcaption><b>Built around your life.</b> Two jobs, summer breaks, a holiday trip, rent that skips August: describe it once.</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <!-- Privacy -->
+      <section class="section" id="privacy">
+        <div class="wrap">
+          <p class="kicker reveal">Privacy and security</p>
+          <h2 class="reveal">Your money.<br />Not your password.</h2>
+          <div class="cards four">
+            <article class="card reveal">
+              <h3>No bank logins</h3>
+              <p>Lowtide never asks for a bank password. Data comes from alert emails, files you import and numbers you type.</p>
+            </article>
+            <article class="card reveal">
+              <h3>Passkeys only</h3>
+              <p>Sign in with Face ID or Touch ID. There is no password to steal, phish or reuse.</p>
+            </article>
+            <article class="card reveal">
+              <h3>Checked at the door</h3>
+              <p>A bank email only counts when Gmail's DMARC check passes for that bank's exact domain.</p>
+            </article>
+            <article class="card reveal">
+              <h3>Open and reviewed</h3>
+              <p>Every line is on GitHub, with a threat model and two security reviews written up.</p>
+            </article>
+          </div>
+          <p class="more reveal"><a href="https://github.com/grosssec/lowtide/blob/main/SECURITY.md">Read the security write-up <span aria-hidden="true">→</span></a></p>
+        </div>
+      </section>
+
+      <!-- Under the hood -->
+      <section class="section" id="build">
+        <div class="wrap build reveal">
+          <div>
+            <p class="kicker">Under the hood</p>
+            <h2>Small, fast and free to run.</h2>
+            <p class="section-lead">
+              React on the front, a Cloudflare Worker with D1 behind it, Web Push written from the RFCs, and a forecasting engine in plain TypeScript, with
+              a fixture test for every pay rule. It fits in the Workers free plan's 10 ms of CPU per request.
+            </p>
+            <p class="more"><a href="https://github.com/grosssec/lowtide/blob/main/docs/architecture.md">How it's built <span aria-hidden="true">→</span></a></p>
+          </div>
+          <ul class="stack" aria-label="Technology">
+            <li>React 19</li>
+            <li>TypeScript</li>
+            <li>Tailwind 4</li>
+            <li>Cloudflare Workers</li>
+            <li>D1</li>
+            <li>Hono</li>
+            <li>WebAuthn</li>
+            <li>Web Push</li>
+            <li>Vitest</li>
+            <li>PWA</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Closing call to action -->
+      <section class="closing">
+        <div class="wrap">
+          <img class="closing-mark reveal" src="/favicon.svg" alt="" width="64" height="64" />
+          <h2 class="reveal">See your low tide<br />before it comes.</h2>
+          <div class="actions center reveal">
+            <a class="button" href="https://demo.ricardogross.com">Try the live demo <span aria-hidden="true">→</span></a>
+            <a class="button ghost" href="https://github.com/grosssec/lowtide">Star it on GitHub</a>
+          </div>
+          <p class="note reveal">Lowtide runs one household today. Accounts for everyone are next on the roadmap.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap footer-row">
+        <a class="brand" href="/" aria-label="Lowtide, home">
+          <img src="/favicon.svg" alt="" width="24" height="24" />
+          <span>lowtide</span>
+        </a>
+        <p>A personal project by <a href="https://github.com/grosssec">Ricardo Gross</a>. Open source under the MIT license.</p>
+        <nav aria-label="Links">
+          <a href="https://github.com/grosssec/lowtide">GitHub</a>
+          <a href="https://github.com/grosssec/lowtide/blob/main/SECURITY.md">Security</a>
+          <a href="https://demo.ricardogross.com">Demo</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

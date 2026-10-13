@@ -1,31 +1,35 @@
-# finance-dashboard
+# Lowtide
 
-Ricardo's personal finance dashboard. Product decisions and status: vault note `~/Documents/Second Brain/10-Projects/Finance Dashboard.md`.
+A personal cash-flow forecast: what is safe to spend before the next paycheck. Public repo (github.com/grosssec/lowtide, MIT); the owner's deployment is finance.ricardogross.com, the demo demo.ricardogross.com, the landing page lowtide.ricardogross.com. Product status for the owner: vault note `10-Projects/Finance Dashboard.md`.
 
 ## Stack
-- React 19 + Vite 8 + Tailwind 4 SPA in `src/` (pages in `src/pages`, charts in `src/components/charts.tsx`), Cloudflare Worker API in `worker/` (Hono, D1 via `worker/db.ts`, passkeys in `worker/auth.ts`), Wrangler 4. Schema in `migrations/`.
+- React 19 + Vite 8 + Tailwind 4 app in `src/` (pages in `src/pages`, charts in `src/components/charts.tsx`), Cloudflare Worker API in `worker/` (Hono, D1 via `worker/db.ts`, passkeys in `worker/auth.ts`), Wrangler 4. Schema in `migrations/`.
 - Workers free plan = ~10 ms CPU per request: the Worker computes only the Month screen (`buildDashboard`, ~1 ms). The year plan (`buildYearPlan`) and statement parsing (`shared/import/file.ts`, lazy-loads pdf.js) run in the browser. Keep heavy work out of `worker/`.
-- Sync: `apps-script/` (Google Apps Script in Ricardo's Google Workspace) posts bank alert emails and timesheet hours to `/api/ingest/*` (`worker/ingest.ts`, bearer `INGEST_TOKEN`, no session). Hourly Cron Trigger → daily push at 8 am Chicago (`worker/notify.ts`, Web Push over WebCrypto in `shared/push/webpush.ts`, service worker `public/sw.js`).
-- Domain logic in `shared/engine/` (forecast) and `shared/import/` (statement/CSV parsers, categorizer, ledger): pure TypeScript, no I/O. Shared by the Worker, the UI and `scripts/`.
-- Tests in `test/` (Vitest, `vitest.config.ts`, plain Node). Lint: oxlint. Type-check: `tsc -b` (app, node, worker, tools projects).
+- Sync: `apps-script/` (Google Apps Script) posts bank alert emails and timesheet hours to `/api/ingest/*` (`worker/ingest.ts`, bearer `INGEST_TOKEN`, no session). Hourly Cron Trigger → daily push at 8 am in `TIMEZONE` (`worker/notify.ts`, Web Push over WebCrypto in `shared/push/webpush.ts`, service worker `public/sw.js`).
+- Domain logic in `shared/` (engine, plan, import, push, brand): pure TypeScript, no I/O, shared by the Worker, the UI and `scripts/`.
+- Brand: the mark and outlined wordmark are drawn once in `shared/brand/mark.ts` (used by `src/components/Brand.tsx`, index.html's splash via the Vite plugin in `vite.config.ts`, and `scripts/brand.ts`). Guide: `docs/brand.md`.
+- Landing page: static files in `site/public` (own `site/wrangler.jsonc`). Demo: `env.demo` in `wrangler.jsonc` (read-only, frozen `DEMO_TODAY`, data from `scripts/demo.ts`).
+- Tests in `test/` (Vitest, plain Node). Lint: oxlint. Type-check: `tsc -b` (app, node, worker, tools projects). CI: `.github/workflows/ci.yml`.
 - Imports use explicit `.ts` extensions so `scripts/` run directly with Node's type stripping (`node scripts/plan.ts`).
 
 ## Commands
-- `npm run dev`: app + Worker locally (`.dev.vars` `DEV_AUTH_BYPASS=1` skips sign-in on localhost only)
-- `npm run db:migrate` / `npm run seed`: local D1 tables / load `data/` into local D1 without overwriting app edits (`-- --plan` replaces only the plan, `-- --force` replaces everything, `-- --remote` only with Ricardo's OK)
-- `node scripts/secrets.ts`: INGEST_TOKEN, CHALLENGE_KEY and VAPID keys into `.dev.vars` (`--remote`: into `.env` + `wrangler secret put`; `--only NAME` for one). Never print the values.
-- `npm run setup-code` (`-- --remote`): one-time device code for a first passkey or recovery. Ricardo runs the remote one himself.
+- `npm run dev`: app + Worker locally (`.dev.vars` `DEV_AUTH_BYPASS=1` skips sign-in on localhost only). Demo locally: `node scripts/demo.ts`, then `CLOUDFLARE_ENV=demo npx vite --port 5174`
+- `npm run db:migrate` / `npm run seed`: local D1 tables / load `data/` into local D1 without overwriting app edits (`-- --plan` replaces only the plan, `-- --force` replaces everything, `-- --remote` only with the owner's OK)
+- `node scripts/secrets.ts`: INGEST_TOKEN, CHALLENGE_KEY and VAPID keys into `.dev.vars` (`--remote`: into `.env` + `wrangler secret put`; `--only NAME` for one). Never print the values, and never print `.env` or `.dev.vars`.
+- `npm run setup-code` (`-- --remote`): one-time device code for a first passkey or recovery. The owner runs the remote one himself.
 - `npm test`, `npm run typecheck`, `npm run lint`: run all three before calling work done
+- `npm run deploy` / `deploy:demo` / `deploy:site`: the app, the demo, the landing page (see DEPLOY.md)
+- `node scripts/screenshots.ts` (demo running on :5174) then `node scripts/brand.ts`: README/landing screenshots, icons, link previews
 - `npm run plan`: cash-flow plan from `data/plan.local.json` (`scripts/plan.example.json` documents the shape)
 - `npm run import`: `data/imports/*` (Chase statement PDFs, Chase/Discover CSVs) → `data/ledger.json`. Personal category rules in `data/rules.local.json` run before `DEFAULT_RULES` (`shared/import/categorize.ts`)
 
 ## Rules
-- Real financial data never enters git or the vault. `data/` is gitignored; secrets only in `.env` / `.dev.vars`.
+- Real financial data never enters git, the vault or the public docs. `data/` is gitignored; secrets only in `.env` / `.dev.vars`. Fixtures and the demo use made-up names, places and amounts.
 - Money is integer cents (`Cents`). Dates are ISO strings with UTC math (`shared/engine/dates.ts`).
 - Engine changes are test-first: every pay-schedule or projection rule gets a fixture test.
-- UI copy in English. Conventional Commits.
-- Nothing goes live (deploy, bank connections, DNS, paid services) without Ricardo's OK. Deploy steps: `DEPLOY.md`.
-- Production D1 is the source of truth for the plan and balances once Ricardo edits them in the app. Pull them into `data/plan.local.json` before any `seed -- --plan --remote`, or his edits are lost.
+- UI copy in English, in the voice of `docs/brand.md`. Conventional Commits.
+- Nothing goes live (deploy, bank connections, DNS, paid services) without the owner's OK. Deploy steps: `DEPLOY.md`.
+- Production D1 is the source of truth for the plan and balances once they are edited in the app. Pull them into `data/plan.local.json` before any `seed -- --plan --remote`, or those edits are lost.
 - Data endpoints need a session; state-changing calls need the `X-Requested-With: finance-dashboard` header (the `src/lib/api.ts` wrapper sends it). Only `/api/ingest/*` skips both and uses the bearer token instead.
 - Apps Script code (`apps-script/Code.gs`) is plain V8 JavaScript; its pure helpers are tested in `test/apps-script/` through `node:vm`. Gmail access stays read-only (advanced Gmail API, `gmail.readonly`).
 

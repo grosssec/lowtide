@@ -1,0 +1,15 @@
+/**
+ * The Lowtide landing page: static files only (no Worker code), served from Cloudflare's edge.
+ * Deploy: npm run deploy:site
+ */
+{
+	"$schema": "../node_modules/wrangler/config-schema.json",
+	"name": "lowtide-site",
+	"compatibility_date": "2026-09-26",
+	"assets": {
+		"directory": "./public",
+		"not_found_handling": "404-page"
+	},
+	"routes": [{ "pattern": "lowtide.ricardogross.com", "custom_domain": true }],
+	"workers_dev": false
+}

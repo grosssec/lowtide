@@ -27,7 +27,10 @@ await withChrome(async (page) => {
   for (const shot of SHOTS) {
     await page.viewport(shot.width, shot.height, { scale: 2, mobile: shot.width < 600 });
     await page.media({ dark: shot.dark, reducedMotion: true });
-    await page.open(`${BASE}/?shot=${shot.name}${shot.route}`, 3500);
+    await page.open(`${BASE}/?shot=${shot.name}${shot.route}`, 300);
+    // The app must be signed in (the demo always is) and the screen drawn; a sign-in page here means the server was not ready.
+    await page.waitFor("document.querySelector('main h1') && !document.querySelector('.login-bg')");
+    await sleep(1800);
     if (shot.scrollTo) {
       await page.evaluate(
         `(() => { const h = [...document.querySelectorAll('h2')].find((e) => e.textContent === ${JSON.stringify(shot.scrollTo)}); if (h) window.scrollTo(0, h.getBoundingClientRect().top + scrollY - 80); })()`,

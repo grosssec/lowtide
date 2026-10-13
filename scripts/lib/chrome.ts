@@ -21,6 +21,8 @@ export interface Page {
   media(options: { dark?: boolean; reducedMotion?: boolean }): Promise<void>;
   open(url: string, waitMs?: number): Promise<void>;
   evaluate(expression: string): Promise<void>;
+  /** Polls a JavaScript condition until it is true; throws after `timeoutMs`. */
+  waitFor(condition: string, timeoutMs?: number): Promise<void>;
   png(): Promise<Buffer>;
 }
 
@@ -81,6 +83,15 @@ export async function withChrome<T>(work: (page: Page) => Promise<T>): Promise<T
       },
       async evaluate(expression) {
         await send('Runtime.evaluate', { expression, awaitPromise: true });
+      },
+      async waitFor(condition, timeoutMs = 15000) {
+        const until = Date.now() + timeoutMs;
+        while (Date.now() < until) {
+          const { result } = (await send('Runtime.evaluate', { expression: `Boolean(${condition})`, returnByValue: true })) as { result?: { value?: boolean } };
+          if (result?.value) return;
+          await sleep(150);
+        }
+        throw new Error(`Timed out waiting for: ${condition}`);
       },
       async png() {
         const { data } = (await send('Page.captureScreenshot', { format: 'png' })) as { data: string };

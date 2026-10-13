@@ -17,7 +17,7 @@ app.use('/api/*', async (c, next) => {
   c.header('Cache-Control', 'no-store');
 });
 
-// workers.dev can't set a minimum TLS version, so the API refuses TLS 1.0 / 1.1 itself (they have known weaknesses).
+// The zone requires TLS 1.2+; the API also refuses TLS 1.0 / 1.1 itself, in case that setting ever changes.
 app.use('/api/*', async (c, next) => {
   const tls = (c.req.raw as Request & { cf?: { tlsVersion?: string } }).cf?.tlsVersion;
   if (tls && /^TLSv1(\.[01])?$/.test(tls)) return c.json({ error: 'Please update your browser: TLS 1.2 or newer is required' }, 426);
@@ -41,7 +41,7 @@ app.use('/api/*', async (c, next) => {
 // The sync script authenticates with its own bearer token (worker/ingest.ts), never with the session cookie.
 const isIngest = (path: string) => path.startsWith('/api/ingest/');
 
-// Rate limits per client IP: sign-in is the tightest (each attempt writes a challenge), then the sync, then the rest.
+// Rate limits per client IP: sign-in is the tightest (that is where guessing happens), then the sync, then the rest.
 app.use('/api/*', async (c, next) => {
   const path = c.req.path;
   const limiter = path.startsWith('/api/auth/') ? c.env.AUTH_LIMIT : isIngest(path) ? c.env.INGEST_LIMIT : c.env.API_LIMIT;

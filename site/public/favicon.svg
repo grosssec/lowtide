@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Lowtide"><defs>
+<linearGradient id="f-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f2a3a"/><stop offset=".55" stop-color="#0f141b"/><stop offset="1" stop-color="#0a0a0a"/></linearGradient>
+<radialGradient id="f-halo" cx="32" cy="37" r="25" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4b93ea" stop-opacity=".55"/><stop offset=".55" stop-color="#2a78d6" stop-opacity=".16"/><stop offset="1" stop-color="#2a78d6" stop-opacity="0"/></radialGradient>
+<linearGradient id="f-moon" x1="0" y1="21" x2="0" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9cc8f7"/><stop offset=".5" stop-color="#5a9cea"/><stop offset="1" stop-color="#2a78d6"/></linearGradient>
+<clipPath id="f-sky"><path d="M0 0 H64 V38.6 H57 C53 37 49 37.2 43.5 40 C37 43.4 32 43.4 25.5 40 C19 36.6 13.5 36.6 7 40 H0 Z"/></clipPath>
+</defs>
+<rect width="64" height="64" rx="14.5" fill="url(#f-bg)"/>
+<rect class="lt-halo" width="64" height="64" rx="14.5" fill="url(#f-halo)"/>
+<g clip-path="url(#f-sky)"><circle class="lt-moon" cx="32" cy="37" r="16" fill="url(#f-moon)"/></g>
+<path class="lt-wave" d="M7 40 C13.5 36.6 19 36.6 25.5 40 C32 43.4 37 43.4 43.5 40 C49 37.2 53 37 57 38.6" fill="none" stroke="#f7f7f5" stroke-width="5.2" stroke-linecap="round"/>
+</svg>

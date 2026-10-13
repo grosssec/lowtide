@@ -1,6 +1,6 @@
 # Security
 
-A single-user personal finance app holds a person's whole financial picture: balances, every transaction, pay, plans. This document says what the app protects, from whom, how, what it deliberately leaves out, and what two security reviews found and fixed.
+Lowtide, a single-user personal finance app, holds a person's whole financial picture: balances, every transaction, pay, plans. This document says what the app protects, from whom, how, what it deliberately leaves out, and what two security reviews found and fixed.
 
 ## What is worth protecting
 
@@ -147,6 +147,19 @@ Clean in this round:
 - mass assignment on balances and plan;
 - SSRF bypass encodings: lookalike domains, fragments, internal IPs, the cloud metadata IP, `http`, userinfo, trailing dot.
 
+### Round 3: before publishing the repository
+| Check | Result |
+|---|---|
+| Secret scan of the whole git history: every real secret value compared against every version of every file, plus common key patterns (cloud keys, tokens, private keys, JWTs) | Clean |
+| Personal details in fixtures and history (names, places, pay rates) | Replaced with made-up ones; history rewritten before the first push; commits use a no-reply address |
+| An unused secret from an older sign-in flow | Removed from every environment |
+| Repository settings | Private vulnerability reporting, CodeQL code scanning, secret scanning with push protection and Dependabot updates are on |
+| Landing page | Static files only, with a strict CSP (no inline or remote scripts), `nosniff`, no framing and HSTS |
+
+## Supported versions
+
+Only the latest `main`, and the deployment built from it, gets security fixes.
+
 ## Reporting a vulnerability
 
-Please open a private security advisory on the repository (GitHub → Security → Report a vulnerability) instead of a public issue. Include steps to reproduce, and don't test against anyone else's deployment.
+Please report privately: **GitHub → Security → Report a vulnerability** on this repository, not a public issue. Include the steps to reproduce and what you expected; you will get a reply within a week. The [public demo](https://demo.ricardogross.com) is read-only and fine to look at closely; please don't load-test it, and never test against someone else's deployment.

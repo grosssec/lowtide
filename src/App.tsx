@@ -34,6 +34,9 @@ function useHashTab(): [Tab, (route: Route) => void] {
   ];
 }
 
+/** Screenshots for the README and the landing page (scripts/screenshots.ts) show the app as a user sees it. */
+const MARKETING_SHOT = new URLSearchParams(window.location.search).has('shot');
+
 /** A quiet strip under the header: this is the public demo, with made-up data, and nothing is saved. */
 function DemoBanner({ today }: { today?: string }) {
   return (
@@ -70,7 +73,7 @@ export default function App() {
 
   return (
     <>
-      <Shell tab={tab} onTab={setTab} banner={status.demo ? <DemoBanner today={status.today} /> : undefined}>
+      <Shell tab={tab} onTab={setTab} banner={status.demo && !MARKETING_SHOT ? <DemoBanner today={status.today} /> : undefined}>
         {tab === 'month' && <MonthPage onGo={setTab} />}
         {tab === 'plan' && <PlanPage onGo={setTab} />}
         {tab === 'transactions' && <TransactionsPage />}

@@ -4,14 +4,41 @@
     {
       "name": "finance-dashboard",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "--port", "5173", "--strictPort"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5173",
+        "--strictPort"
+      ],
       "port": 5173
     },
     {
       "name": "finance-demo",
       "runtimeExecutable": "/usr/bin/env",
-      "runtimeArgs": ["CLOUDFLARE_ENV=demo", "npx", "vite", "--port", "5174", "--strictPort"],
+      "runtimeArgs": [
+        "CLOUDFLARE_ENV=demo",
+        "npx",
+        "vite",
+        "--port",
+        "5174",
+        "--strictPort"
+      ],
       "port": 5174
+    },
+    {
+      "name": "lowtide-site",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "wrangler",
+        "dev",
+        "-c",
+        "site/wrangler.jsonc",
+        "--port",
+        "8790"
+      ],
+      "port": 8790
     }
   ]
 }
