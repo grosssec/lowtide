@@ -23,12 +23,12 @@ describe('parseBankAlert', () => {
     expect(parseBankAlert(email(CHASE, 'Your account alert preferences have changed')).status).toBe('ignored');
   });
 
-  it('reads a debit card purchase in the local date (UTC evening is still the same day in Lakeside)', () => {
-    expect(parseBankAlert(email(CHASE, 'Your $3.60 debit card transaction with COCA COLA ROUND ROCK LA'))).toEqual({
+  it('reads a debit card purchase in the local date (UTC evening is still the same day in Central Time)', () => {
+    expect(parseBankAlert(email(CHASE, 'Your $3.60 debit card transaction with COCA COLA ROUND ROCK TX'))).toEqual({
       status: 'transaction',
       account: 'chase',
       date: '2026-10-07',
-      description: 'COCA COLA ROUND ROCK LA',
+      description: 'COCA COLA ROUND ROCK TX',
       amount: -360,
     });
   });

@@ -91,7 +91,7 @@ export const DEFAULT_RULES: CategoryRule[] = [
     match: 'apple\\.com/bill|google \\*workspace|canva|amazon prime|walmart\\^? member|capcut|elevenlabs|higgsfield|openai|chatgpt|grok|anthropic|claude\\.ai|proton ag|name-?cheap|respondus|replicate|spotify|netflix|adobe',
     category: 'Subscriptions',
   },
-  { match: '\\birs\\b|treas tax|tax payment|state of lakeside dept rev', category: 'Taxes' },
+  { match: '\\birs\\b|treas tax|tax payment|dept of revenue|dept rev', category: 'Taxes' },
   { match: 'foreign exch rt adj fee|\\bfee\\b|interest charge', category: 'Fees' },
   // Health and personal care (before Walmart: its pharmacy counts here)
   { match: 'walgreens|\\bcvs\\b|pharmacy|rite aid|great clips|supercuts|sport clips|barber|salon', category: 'Health & personal care' },
@@ -108,8 +108,8 @@ export const DEFAULT_RULES: CategoryRule[] = [
   { match: 'airlines|delta air|united air|american air|southwest|spirit air|frontier|airbnb|hotel|marriott|hilton|expedia|booking\\.com|greyhound', category: 'Travel' },
   { match: 'uber|ubr\\*|lyft|atrans|tokentransit|transit|parking|pkg', category: 'Transportation' },
   { match: 'amazon|amzn|ross store|marshalls|nike|adidas|old navy|tj ?maxx|best buy|target|ebay|shein|temu|eros negocios', category: 'Shopping' },
-  // ACH names are cut at 16 characters ("LAKESIDE CHRIST"), so match the start of the name.
-  { match: 'lakeside chri|lakeside col|flywire|chegg|textbook', category: 'Education', sign: 'out' },
+  // ACH names are cut at 16 characters ("LAKESIDE COLLEG"), so match the start of the word.
+  { match: '\\bcolleg|universit|tuition|flywire|chegg|textbook', category: 'Education', sign: 'out' },
   { match: 'gofundme|donation|church|tithe', category: 'Gifts' },
   // People
   { match: 'zelle payment to', category: 'Sent to people' },

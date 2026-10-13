@@ -72,7 +72,7 @@ describe('paychecksBetween', () => {
     expect(checks.map((c) => c.payDate)).toEqual(['2026-10-15', '2026-11-16']); // Nov 15 is a Sunday
     expect(checks[0].period).toEqual({ start: '2026-09-01', end: '2026-09-30' });
     expect(checks[0].hours).toBe(63); // 21 weekdays (Labor Day off) × 3 h
-    expect(checks[0].amount).toBe(73_269); // 63 h × $15.00
+    expect(checks[0].amount).toBe(94_500); // 63 h × $15.00
   });
 
   it('pays a semi-monthly job: 1–15 mid-month, 16–end on the 5th business day after', () => {
@@ -87,8 +87,8 @@ describe('paychecksBetween', () => {
       ['2026-10-07', '2026-09-16', '2026-09-30'],
       ['2026-10-16', '2026-10-01', '2026-10-15'],
     ]);
-    expect(checks[0].amount).toBe(33_000); // 11 weekdays × 2.4 h × $20.00
-    expect(checks[1].amount).toBe(55_000); // 11 weekdays × 4 h × $20.00
+    expect(checks[0].amount).toBe(52_800); // 11 weekdays × 2.4 h × $20.00
+    expect(checks[1].amount).toBe(88_000); // 11 weekdays × 4 h × $20.00
   });
 
   it('applies a rate change from its effective day', () => {
