@@ -46,5 +46,5 @@ The first public release.
 
 - A read-only copy with six months of made-up data, frozen on one day, at [demo.ricardogross.com](https://demo.ricardogross.com).
 
-[1.0.1]: https://github.com/grosssec/lowtide/releases/tag/v1.0.1
-[1.0.0]: https://github.com/grosssec/lowtide/releases/tag/v1.0.0
+[1.0.1]: https://github.com/ricardoogross/lowtide/releases/tag/v1.0.1
+[1.0.0]: https://github.com/ricardoogross/lowtide/releases/tag/v1.0.0

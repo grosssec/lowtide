@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/grosssec/lowtide/actions/workflows/ci.yml"><img src="https://github.com/grosssec/lowtide/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/ricardoogross/lowtide/actions/workflows/ci.yml"><img src="https://github.com/ricardoogross/lowtide/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <img src="https://img.shields.io/badge/TypeScript-strict-2a78d6?logo=typescript&logoColor=white" alt="TypeScript, strict" />
   <img src="https://img.shields.io/badge/Cloudflare-Workers%20%2B%20D1-2a78d6?logo=cloudflare&logoColor=white" alt="Cloudflare Workers and D1" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2a78d6" alt="MIT license" /></a>
@@ -84,7 +84,7 @@ There are no bank credentials anywhere: data comes from alert emails, files you 
 You need Node 22.18 or newer (for TypeScript type stripping).
 
 ```bash
-git clone https://github.com/grosssec/lowtide.git && cd lowtide
+git clone https://github.com/ricardoogross/lowtide.git && cd lowtide
 npm install
 node scripts/demo.ts                       # a local database with made-up data
 CLOUDFLARE_ENV=demo npx vite --port 5174   # then open http://localhost:5174

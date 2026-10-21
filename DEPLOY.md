@@ -12,7 +12,7 @@ You need:
 ## 1. Set up the project
 
 ```bash
-git clone https://github.com/grosssec/lowtide.git && cd lowtide
+git clone https://github.com/ricardoogross/lowtide.git && cd lowtide
 npm install
 npx wrangler login                 # a browser window opens; approve it
 npx wrangler d1 create finance     # prints a database_id

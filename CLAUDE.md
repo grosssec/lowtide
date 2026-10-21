@@ -1,6 +1,6 @@
 # Lowtide
 
-A personal cash-flow forecast: what is safe to spend before the next paycheck. Public repo (github.com/grosssec/lowtide, MIT); the owner's deployment is finance.ricardogross.com, the demo demo.ricardogross.com, the landing page lowtide.ricardogross.com. Product status for the owner: vault note `10-Projects/Finance Dashboard.md`.
+A personal cash-flow forecast: what is safe to spend before the next paycheck. Public repo (github.com/ricardoogross/lowtide, MIT); the owner's deployment is finance.ricardogross.com, the demo demo.ricardogross.com, the landing page lowtide.ricardogross.com. Product status for the owner: vault note `10-Projects/Finance Dashboard.md`.
 
 ## Stack
 - React 19 + Vite 8 + Tailwind 4 app in `src/` (pages in `src/pages`, charts in `src/components/charts.tsx`), Cloudflare Worker API in `worker/` (Hono, D1 via `worker/db.ts`, passkeys in `worker/auth.ts`), Wrangler 4. Schema in `migrations/`.

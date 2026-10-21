@@ -7,12 +7,12 @@
   "homepage": "https://lowtide.ricardogross.com",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/grosssec/lowtide.git"
+    "url": "git+https://github.com/ricardoogross/lowtide.git"
   },
   "bugs": {
-    "url": "https://github.com/grosssec/lowtide/issues"
+    "url": "https://github.com/ricardoogross/lowtide/issues"
   },
-  "author": "Ricardo Gross (https://github.com/grosssec)",
+  "author": "Ricardo Gross (https://github.com/ricardoogross)",
   "type": "module",
   "scripts": {
     "dev": "vite",
